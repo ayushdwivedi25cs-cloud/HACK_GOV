@@ -5,6 +5,8 @@ import { GovernmentHeader } from '../components/GovernmentHeader';
 import { GovernmentFooter } from '../components/GovernmentFooter';
 import { SOSModal } from '../components/SOSModal';
 import { FloatingBot } from '../components/FloatingBot';
+import { LocationProvider } from '../context/LocationContext';
+import { FloatingEmergencyButton } from '../components/FloatingEmergencyButton';
 
 export function ClientLayout({ children }: { children: React.ReactNode }) {
   const [sosOpen, setSosOpen] = useState(false);
@@ -62,7 +64,7 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
   }, [womensSirenActive, stopSiren]);
 
   return (
-    <>
+    <LocationProvider>
       {/* Floating Women SOS button (every page) */}
       <button
         onClick={triggerWomensSOS}
@@ -72,6 +74,8 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
       >
         ♀ {womensSirenActive ? 'STOP SIREN' : "Women's SOS"}
       </button>
+
+      <FloatingEmergencyButton />
 
       <GovernmentHeader
         onTriggerSOS={() => setSosOpen(true)}
@@ -85,6 +89,6 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
       <GovernmentFooter />
       <FloatingBot />
       <SOSModal isOpen={sosOpen} onClose={() => setSosOpen(false)} />
-    </>
+    </LocationProvider>
   );
 }

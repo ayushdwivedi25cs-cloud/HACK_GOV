@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import User from '../models/User';
+import prisma from '../config/prisma';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'hackgov-super-secret-key-12345';
 
@@ -23,7 +23,11 @@ export const registerCitizen = async (req: Request, res: Response): Promise<void
     } = req.body;
 
     // Check if user already exists
-    const existingUser = await User.findOne({ $or: [{ email }, { mobile }] });
+    const existingUser = await prisma.user.findFirst({
+      where: {
+        OR: [{ email }, { mobile }]
+      }
+    });
     if (existingUser) {
       res.status(400).json({ message: 'A citizen with this email or mobile number already exists.' });
       return;
@@ -40,23 +44,23 @@ export const registerCitizen = async (req: Request, res: Response): Promise<void
     const passwordHash = await bcrypt.hash(password, salt);
 
     // Create user
-    const newUser = new User({
-      name,
-      aadhaar,
-      mobile,
-      email,
-      dob: new Date(dob),
-      gender,
-      address,
-      state,
-      district,
-      passwordHash,
-      medicalInfo: medicalInfo || {},
-      emergencyContacts,
-      role: 'citizen'
+    await prisma.user.create({
+      data: {
+        name,
+        aadhaar,
+        mobile,
+        email,
+        dob: dob ? new Date(dob) : null,
+        gender,
+        address,
+        state,
+        district,
+        passwordHash,
+        medicalInfo: medicalInfo ? JSON.stringify(medicalInfo) : null,
+        emergencyContacts: JSON.stringify(emergencyContacts),
+        role: 'citizen'
+      }
     });
-
-    await newUser.save();
 
     res.status(201).json({ message: 'Citizen registration completed successfully.' });
   } catch (error) {
@@ -89,7 +93,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     }
 
     // Locate normal citizen
-    const user = await User.findOne({ email });
+    const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
       res.status(400).json({ message: 'Invalid credentials or user does not exist.' });
       return;
@@ -110,7 +114,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 
     // Issue JWT
     const token = jwt.sign(
-      { userId: user._id, role: user.role, name: user.name },
+      { userId: user.id, role: user.role, name: user.name },
       JWT_SECRET,
       { expiresIn: '24h' }
     );
@@ -118,13 +122,13 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     res.json({
       token,
       user: {
-        id: user._id,
+        id: user.id,
         name: user.name,
         email: user.email,
         mobile: user.mobile,
         role: user.role,
-        medicalInfo: user.medicalInfo,
-        emergencyContacts: user.emergencyContacts,
+        medicalInfo: user.medicalInfo ? JSON.parse(user.medicalInfo) : null,
+        emergencyContacts: user.emergencyContacts ? JSON.parse(user.emergencyContacts) : [],
         state: user.state,
         district: user.district
       }
@@ -143,15 +147,50 @@ export const getProfile = async (req: any, res: Response): Promise<void> => {
       return;
     }
 
-    const user = await User.findById(userId).select('-passwordHash');
+    const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) {
       res.status(404).json({ message: 'Citizen profile not found.' });
       return;
     }
 
-    res.json(user);
+    // Return user without passwordHash, parse JSON fields
+    const { passwordHash: _ph, ...userWithoutPassword } = user;
+    res.json({
+      ...userWithoutPassword,
+      medicalInfo: user.medicalInfo ? JSON.parse(user.medicalInfo) : null,
+      emergencyContacts: user.emergencyContacts ? JSON.parse(user.emergencyContacts) : []
+    });
   } catch (error) {
     console.error('Profile fetch error:', error);
     res.status(500).json({ message: 'Error retrieving profile information.', error: String(error) });
+  }
+};
+
+export const updateProfile = async (req: any, res: Response): Promise<void> => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId || userId === 'admin-id') {
+      res.status(400).json({ message: 'Invalid user session' });
+      return;
+    }
+
+    const { medicalInfo, emergencyContacts } = req.body;
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        medicalInfo: medicalInfo ? JSON.stringify(medicalInfo) : undefined,
+        emergencyContacts: emergencyContacts ? JSON.stringify(emergencyContacts) : undefined,
+      }
+    });
+
+    const { passwordHash: _ph, ...userWithoutPassword } = user;
+    res.json({
+      ...userWithoutPassword,
+      medicalInfo: user.medicalInfo ? JSON.parse(user.medicalInfo) : null,
+      emergencyContacts: user.emergencyContacts ? JSON.parse(user.emergencyContacts) : []
+    });
+  } catch (error) {
+    console.error('Profile update error:', error);
+    res.status(500).json({ message: 'Error updating profile.', error: String(error) });
   }
 };

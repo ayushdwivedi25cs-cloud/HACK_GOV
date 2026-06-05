@@ -1,0 +1,58 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id                String     @id @default(cuid())
+  name              String
+  aadhaar           String?
+  mobile            String     @unique
+  email             String     @unique
+  dob               DateTime?
+  gender            String?
+  address           String?
+  state             String?
+  district          String?
+  passwordHash      String
+  medicalInfo       String?
+  emergencyContacts String?
+  role              String     @default("citizen")
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+  incidents         Incident[]
+}
+
+model Incident {
+  id                String    @id @default(cuid())
+  userId            String?
+  user              User?     @relation(fields: [userId], references: [id])
+  guestName         String?
+  category          String
+  locationLat       Float
+  locationLng       Float
+  locationAddress   String?
+  locationUpdatedAt DateTime?
+  status            String    @default("pending")
+  severity          String    @default("critical")
+  medicalInfo       String?
+  timestamp         DateTime  @default(now())
+}
+
+model MissingPerson {
+  id               String   @id @default(cuid())
+  name             String
+  age              Int
+  gender           String
+  dateMissing      DateTime
+  lastSeenLocation String
+  description      String?
+  contactNumber    String
+  photoUrl         String?
+  status           String   @default("missing")
+  createdAt        DateTime @default(now())
+}

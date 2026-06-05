@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import MissingPerson from '../models/MissingPerson';
+import prisma from '../config/prisma';
 
 export const createMissingReport = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -11,19 +11,20 @@ export const createMissingReport = async (req: Request, res: Response): Promise<
       return;
     }
 
-    const newReport = new MissingPerson({
-      name,
-      age: parseInt(age, 10),
-      gender,
-      dateMissing: new Date(dateMissing),
-      lastSeenLocation,
-      description: description || '',
-      contactNumber,
-      photoUrl: file ? `/uploads/${file.filename}` : '',
-      status: 'missing'
+    const saved = await prisma.missingPerson.create({
+      data: {
+        name,
+        age: parseInt(age, 10),
+        gender,
+        dateMissing: new Date(dateMissing),
+        lastSeenLocation,
+        description: description || '',
+        contactNumber,
+        photoUrl: file ? `/uploads/${file.filename}` : '',
+        status: 'missing'
+      }
     });
 
-    const saved = await newReport.save();
     res.status(201).json({
       message: 'Missing person report registered in civil records. Poster files are available to print.',
       report: saved
@@ -36,7 +37,9 @@ export const createMissingReport = async (req: Request, res: Response): Promise<
 
 export const getMissingPeople = async (_req: Request, res: Response): Promise<void> => {
   try {
-    const list = await MissingPerson.find().sort({ createdAt: -1 });
+    const list = await prisma.missingPerson.findMany({
+      orderBy: { createdAt: 'desc' }
+    });
     res.json(list);
   } catch (error) {
     console.error('List missing error:', error);
@@ -47,7 +50,7 @@ export const getMissingPeople = async (_req: Request, res: Response): Promise<vo
 export const getSingleMissingCase = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
-    const item = await MissingPerson.findById(id);
+    const item = await prisma.missingPerson.findUnique({ where: { id } });
     if (!item) {
       res.status(404).json({ message: 'Report folder not found.' });
       return;

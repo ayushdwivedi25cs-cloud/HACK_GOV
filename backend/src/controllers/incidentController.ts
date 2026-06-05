@@ -1,10 +1,34 @@
 import { Request, Response } from 'express';
-import Incident from '../models/Incident';
+import prisma from '../config/prisma';
 
 export const getAllIncidents = async (_req: Request, res: Response): Promise<void> => {
   try {
-    const incidents = await Incident.find().populate('user', 'name mobile email medicalInfo').sort({ timestamp: -1 });
-    res.json(incidents);
+    const incidents = await prisma.incident.findMany({
+      include: {
+        user: {
+          select: { name: true, mobile: true, email: true, medicalInfo: true }
+        }
+      },
+      orderBy: { timestamp: 'desc' }
+    });
+
+    // Transform user.medicalInfo from JSON string for each incident
+    const transformed = incidents.map(inc => ({
+      ...inc,
+      _id: inc.id,
+      location: {
+        lat: inc.locationLat,
+        lng: inc.locationLng,
+        address: inc.locationAddress,
+        lastUpdated: inc.locationUpdatedAt
+      },
+      user: inc.user ? {
+        ...inc.user,
+        medicalInfo: inc.user.medicalInfo ? JSON.parse(inc.user.medicalInfo) : null
+      } : null
+    }));
+
+    res.json(transformed);
   } catch (error) {
     console.error('Error fetching all incidents:', error);
     res.status(500).json({ message: 'Error retrieving active incidents list.', error: String(error) });
@@ -16,17 +40,21 @@ export const updateIncidentStatus = async (req: Request, res: Response): Promise
     const { id } = req.params;
     const { status, severity } = req.body;
 
-    const incident = await Incident.findById(id);
+    const incident = await prisma.incident.findUnique({ where: { id } });
     if (!incident) {
       res.status(404).json({ message: 'Incident report not found.' });
       return;
     }
 
-    if (status) incident.status = status;
-    if (severity) incident.severity = severity;
+    const updated = await prisma.incident.update({
+      where: { id },
+      data: {
+        ...(status ? { status } : {}),
+        ...(severity ? { severity } : {})
+      }
+    });
 
-    await incident.save();
-    res.json({ message: 'Incident updated successfully.', incident });
+    res.json({ message: 'Incident updated successfully.', incident: updated });
   } catch (error) {
     console.error('Error updating incident:', error);
     res.status(500).json({ message: 'Failed to update incident report.', error: String(error) });
@@ -35,7 +63,7 @@ export const updateIncidentStatus = async (req: Request, res: Response): Promise
 
 export const getIncidentAnalytics = async (_req: Request, res: Response): Promise<void> => {
   try {
-    const allIncidents = await Incident.find();
+    const allIncidents = await prisma.incident.findMany();
 
     // Aggregations
     const statusCounts = { pending: 0, dispatched: 0, resolved: 0 };
@@ -63,11 +91,11 @@ export const getIncidentAnalytics = async (_req: Request, res: Response): Promis
 
     // Heatmap data formatting
     const heatmapPoints = allIncidents.map(inc => ({
-      lat: inc.location.lat,
-      lng: inc.location.lng,
+      lat: inc.locationLat,
+      lng: inc.locationLng,
       category: inc.category,
       severity: inc.severity,
-      id: inc._id
+      id: inc.id
     }));
 
     res.json({
