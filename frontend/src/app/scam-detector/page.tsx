@@ -1,8 +1,6 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Navbar } from '../../components/Navbar';
-import { FloatingBot } from '../../components/FloatingBot';
 import {
   ShieldAlert,
   ShieldCheck,
@@ -93,25 +91,25 @@ export default function ScamDetectorPage() {
     switch (status) {
       case 'SAFE':
         return {
-          bg: 'bg-emerald-950/60 border-emerald-800 text-emerald-400',
+          bg: 'bg-green-50 border-green-200 text-[#138808]',
           icon: ShieldCheck,
           label: 'SAFE LOGICAL VERDICT'
         };
       case 'SUSPICIOUS':
         return {
-          bg: 'bg-amber-950/60 border-amber-800 text-amber-400',
+          bg: 'bg-orange-50 border-orange-200 text-[#FF6200]',
           icon: AlertTriangle,
           label: 'SUSPICIOUS INDICATORS FOUND'
         };
       case 'HIGH RISK':
         return {
-          bg: 'bg-red-950/60 border-red-800 text-red-400 animate-pulse',
+          bg: 'bg-red-50 border-red-200 text-[#CC0001] animate-pulse',
           icon: AlertOctagon,
           label: 'HIGH RISK SCAM / PHISHING DETECTED'
         };
       default:
         return {
-          bg: 'bg-slate-900 border-slate-800 text-slate-400',
+          bg: 'bg-gray-50 border-gray-200 text-gray-500',
           icon: ShieldAlert,
           label: 'UNSPECIFIED VULNERABILITY'
         };
@@ -119,37 +117,35 @@ export default function ScamDetectorPage() {
   };
 
   return (
-    <main className="min-h-screen bg-slate-950 text-white flex flex-col">
-      <Navbar onTriggerWomensSOS={() => {}} />
-
-      <div className="flex-1 max-w-5xl w-full mx-auto px-4 py-8 space-y-8 flex flex-col justify-center">
+    <div className="gov-section-gray min-h-screen">
+      <div className="gov-container flex flex-col justify-center py-8">
         
         {/* Title block */}
-        <div className="text-center max-w-2xl mx-auto space-y-2">
-          <h1 className="font-extrabold text-2xl sm:text-3xl uppercase tracking-wider text-white flex items-center justify-center space-x-2">
-            <ShieldAlert className="h-7 w-7 text-emerald-400" />
-            <span>AI Cyber Scam Screening Center</span>
+        <div className="text-center max-w-2xl mx-auto mb-8">
+          <h1 className="gov-section-title flex items-center justify-center gap-2 mb-2">
+            <ShieldAlert className="h-7 w-7 text-[#0057A8]" />
+            AI Cyber Scam Screening Center
           </h1>
-          <p className="text-xs text-slate-400 leading-relaxed">
-            Protect yourself from financial fraud. Copy and paste messages, links, or upload screenshots of SMS, WhatsApp, and Emails to evaluate risk triggers instantly.
+          <p className="gov-section-subtitle mb-0">
+            Official government tool to protect against financial fraud. Paste messages, links, or upload screenshots to evaluate cyber risk instantly.
           </p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
           
           {/* Left panel Form inputs */}
-          <form onSubmit={handleScan} className="bg-slate-900 border border-slate-850 p-6 rounded-xl shadow-xl space-y-6">
+          <form onSubmit={handleScan} className="bg-white border border-gray-200 p-6 rounded shadow-sm border-t-4 border-t-[#0057A8]">
             
             {error && (
-              <div className="bg-red-950/60 border border-red-800 text-red-300 rounded p-3 text-xs flex items-start space-x-2">
-                <AlertOctagon className="h-4.5 w-4.5 mt-0.5 shrink-0" />
-                <span>{error}</span>
+              <div className="gov-notice gov-notice-danger mb-4 flex items-start gap-2">
+                <AlertOctagon className="h-4.5 w-4.5 mt-0.5 shrink-0 text-[#CC0001]" />
+                <span className="text-sm font-semibold text-[#CC0001]">{error}</span>
               </div>
             )}
 
             {/* Input 1: Textarea copy paste */}
-            <div>
-              <label className="block text-xs font-extrabold uppercase tracking-widest text-slate-400 mb-2">
+            <div className="mb-6">
+              <label className="block text-xs font-bold uppercase text-[#1B2B6B] mb-2">
                 Copy/Paste Message Text
               </label>
               <textarea
@@ -157,13 +153,13 @@ export default function ScamDetectorPage() {
                 onChange={(e) => setText(e.target.value)}
                 placeholder="Paste suspicious text message, links, OTP request wording or emails here..."
                 rows={5}
-                className="w-full bg-slate-950 border border-slate-850 rounded-lg p-3 text-xs text-white placeholder-slate-650 focus:outline-none focus:border-emerald-500"
+                className="w-full bg-gray-50 border border-gray-300 rounded p-3 text-sm text-gray-900 focus:outline-none focus:border-[#0057A8] focus:bg-white"
               />
             </div>
 
             {/* Input 2: Drag and drop file upload screenshot */}
-            <div>
-              <label className="block text-xs font-extrabold uppercase tracking-widest text-slate-400 mb-2">
+            <div className="mb-6">
+              <label className="block text-xs font-bold uppercase text-[#1B2B6B] mb-2">
                 Or Upload Screenshot (WhatsApp/SMS)
               </label>
               
@@ -171,7 +167,7 @@ export default function ScamDetectorPage() {
                 <div
                   onDragOver={handleDragOver}
                   onDrop={handleDrop}
-                  className="bg-slate-950 border-2 border-dashed border-slate-800 rounded-lg p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:border-slate-700 transition-colors relative"
+                  className="bg-gray-50 border-2 border-dashed border-gray-300 rounded p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:border-[#0057A8] hover:bg-blue-50 transition-colors relative"
                 >
                   <input
                     type="file"
@@ -179,23 +175,24 @@ export default function ScamDetectorPage() {
                     onChange={handleFileChange}
                     className="absolute inset-0 opacity-0 cursor-pointer"
                   />
-                  <UploadCloud className="h-10 w-10 text-slate-500 mb-2" />
-                  <span className="text-xs font-bold text-slate-300">Drag & Drop Image Screenshot</span>
-                  <span className="text-[10px] text-slate-500 mt-1">Supports PNG, JPG, JPEG files (max 10MB)</span>
+                  <UploadCloud className="h-10 w-10 text-[#0057A8] mb-2 opacity-70" />
+                  <span className="text-sm font-bold text-[#1B2B6B]">Drag & Drop Image Screenshot</span>
+                  <span className="text-xs text-gray-500 mt-1">Supports PNG, JPG, JPEG files (max 10MB)</span>
                 </div>
               ) : (
-                <div className="bg-slate-950 border border-slate-850 p-4 rounded-lg flex items-center justify-between">
-                  <div className="flex items-center space-x-3 min-w-0">
-                    <FileText className="h-8 w-8 text-emerald-500 shrink-0" />
+                <div className="bg-blue-50 border border-blue-200 p-4 rounded flex items-center justify-between">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <FileText className="h-8 w-8 text-[#0057A8] shrink-0" />
                     <div className="min-w-0">
-                      <p className="text-xs font-bold text-white truncate">{file.name}</p>
-                      <p className="text-[10px] text-slate-500">{(file.size / 1024).toFixed(1)} KB</p>
+                      <p className="text-sm font-bold text-[#1B2B6B] truncate">{file.name}</p>
+                      <p className="text-xs text-gray-500">{(file.size / 1024).toFixed(1)} KB</p>
                     </div>
                   </div>
                   <button
                     type="button"
                     onClick={handleRemoveFile}
-                    className="text-red-400 hover:text-red-300 p-2"
+                    className="text-[#CC0001] hover:bg-red-50 p-2 rounded"
+                    title="Remove file"
                   >
                     <Trash2 className="h-4.5 w-4.5" />
                   </button>
@@ -206,51 +203,54 @@ export default function ScamDetectorPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3.5 rounded-lg text-sm font-extrabold uppercase tracking-wider transition-all flex items-center justify-center space-x-2"
+              className="gov-btn-primary w-full justify-center py-3 text-sm tracking-wider"
             >
               {loading ? (
                 <>
-                  <Loader2 className="h-4.5 w-4.5 animate-spin" />
+                  <Loader2 className="h-5 w-5 animate-spin" />
                   <span>AI Forensic Scanning Active...</span>
                 </>
               ) : (
-                <span>SCAN WITH AI PROTECTOR</span>
+                <>
+                  <ShieldAlert className="h-4 w-4" />
+                  <span>SCAN WITH AI PROTECTOR</span>
+                </>
               )}
             </button>
           </form>
 
           {/* Right panel: Scan Results */}
-          <div className="lg:col-span-1">
+          <div>
             {result ? (
-              <div className="bg-slate-900 border border-slate-850 p-6 rounded-xl shadow-xl space-y-6">
+              <div className="bg-white border border-gray-200 p-6 rounded shadow-sm border-t-4 border-t-[#1B2B6B]">
                 
                 {/* Result header badge */}
                 {(() => {
                   const style = getBadgeStyle(result.status);
                   const Icon = style.icon;
                   return (
-                    <div className={`border p-4 rounded-lg flex items-center space-x-3.5 ${style.bg}`}>
+                    <div className={`border p-4 rounded flex items-center gap-4 mb-6 ${style.bg}`}>
                       <Icon className="h-10 w-10 shrink-0" />
                       <div>
-                        <span className="text-[10px] font-black uppercase tracking-wider block">Verdict Report</span>
-                        <h3 className="font-black text-sm uppercase tracking-wide leading-tight">{style.label}</h3>
+                        <span className="text-xs font-bold uppercase tracking-wider block opacity-80">Official Verdict Report</span>
+                        <h3 className="font-black text-sm uppercase tracking-wide leading-tight mt-0.5">{style.label}</h3>
                       </div>
                     </div>
                   );
                 })()}
 
                 {/* Score slider indicator */}
-                <div className="space-y-1.5">
-                  <div className="flex justify-between text-xs font-bold text-slate-400">
+                <div className="mb-6">
+                  <div className="flex justify-between text-xs font-bold text-gray-600 mb-1">
                     <span>Scam Indicator Probability</span>
-                    <span className={result.probability > 60 ? 'text-red-400' : result.probability > 25 ? 'text-amber-400' : 'text-emerald-400'}>
+                    <span className={result.probability > 60 ? 'text-[#CC0001]' : result.probability > 25 ? 'text-[#FF6200]' : 'text-[#138808]'}>
                       {result.probability}%
                     </span>
                   </div>
-                  <div className="w-full bg-slate-950 rounded-full h-2 overflow-hidden">
+                  <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
                     <div
                       className={`h-2 rounded-full transition-all ${
-                        result.status === 'HIGH RISK' ? 'bg-red-500' : result.status === 'SUSPICIOUS' ? 'bg-amber-500' : 'bg-emerald-500'
+                        result.status === 'HIGH RISK' ? 'bg-[#CC0001]' : result.status === 'SUSPICIOUS' ? 'bg-[#FF6200]' : 'bg-[#138808]'
                       }`}
                       style={{ width: `${result.probability}%` }}
                     />
@@ -258,12 +258,14 @@ export default function ScamDetectorPage() {
                 </div>
 
                 {/* Warning details */}
-                <div className="space-y-2">
-                  <h4 className="text-xs font-extrabold text-slate-400 uppercase tracking-widest">Forensic Indicators Identifications</h4>
+                <div className="mb-6">
+                  <h4 className="text-xs font-bold text-[#1B2B6B] uppercase border-b-2 border-[#1B2B6B] pb-1 inline-block mb-3">
+                    Forensic Indicators Identified
+                  </h4>
                   <ul className="space-y-2">
                     {result.indicators.map((ind: string, idx: number) => (
-                      <li key={idx} className="bg-slate-950 p-2.5 border border-slate-850 rounded text-xs flex items-start space-x-2 leading-relaxed font-semibold">
-                        <span className="text-red-500 font-bold">•</span>
+                      <li key={idx} className="bg-gray-50 p-3 border border-gray-200 rounded text-sm flex items-start gap-2 font-medium text-gray-800">
+                        <span className="text-[#CC0001] font-bold mt-0.5">•</span>
                         <span>{ind}</span>
                       </li>
                     ))}
@@ -271,31 +273,33 @@ export default function ScamDetectorPage() {
                 </div>
 
                 {/* Explanation text */}
-                <div className="space-y-1.5">
-                  <h4 className="text-xs font-extrabold text-slate-400 uppercase tracking-widest">AI Analyst Note</h4>
-                  <p className="text-xs text-slate-300 leading-relaxed bg-slate-950/40 p-3.5 border border-slate-850 rounded-lg">
+                <div className="mb-6">
+                  <h4 className="text-xs font-bold text-[#1B2B6B] uppercase border-b-2 border-[#1B2B6B] pb-1 inline-block mb-3">
+                    Cyber Cell Analyst Note
+                  </h4>
+                  <p className="text-sm text-gray-700 leading-relaxed bg-[#EEF4FB] p-4 border border-[#BDD5EF] rounded">
                     {result.explanation}
                   </p>
                 </div>
 
                 {/* Warning action guidance */}
                 {result.status !== 'SAFE' && (
-                  <div className="bg-red-950/30 border border-red-900/60 p-4 rounded-lg flex items-start space-x-2.5">
-                    <AlertTriangle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
-                    <div className="text-[10px] text-slate-400 leading-relaxed">
-                      <span className="font-bold text-red-400 uppercase block mb-1">PROMPT COUNTER ACTION</span>
-                      If you shared bank account details, call the Cyber Cell Helpline immediately at <strong className="text-white">1930</strong>.
+                  <div className="gov-notice gov-notice-danger flex items-start gap-3">
+                    <AlertTriangle className="h-5 w-5 text-[#CC0001] shrink-0 mt-0.5" />
+                    <div className="text-sm text-[#990000] leading-relaxed">
+                      <span className="font-bold uppercase block mb-1">PROMPT COUNTER ACTION REQUIRED</span>
+                      If you shared bank account details or transferred money, call the National Cyber Crime Helpline immediately at <strong className="font-mono text-lg bg-[#CC0001] text-white px-2 py-0.5 rounded ml-1">1930</strong>.
                     </div>
                   </div>
                 )}
 
               </div>
             ) : (
-              <div className="bg-slate-900/40 border border-slate-850/60 rounded-xl p-8 h-[380px] flex flex-col items-center justify-center text-center text-slate-500">
-                <Info className="h-10 w-10 text-slate-655 mb-3" />
-                <h3 className="font-extrabold text-xs uppercase tracking-widest text-slate-400 mb-1">Report Dashboard Ready</h3>
-                <p className="text-[10px] max-w-xs leading-relaxed">
-                  Submit text or upload an SMS image screenshot using the form panel to activate AI scanning and view the verification analysis.
+              <div className="bg-white border border-gray-200 border-dashed rounded p-8 h-full min-h-[400px] flex flex-col items-center justify-center text-center text-gray-500 bg-gray-50">
+                <Info className="h-12 w-12 text-[#0057A8] mb-4 opacity-50" />
+                <h3 className="font-bold text-sm uppercase tracking-widest text-[#1B2B6B] mb-2">Dashboard Ready</h3>
+                <p className="text-sm max-w-sm leading-relaxed">
+                  Submit text or upload an SMS image screenshot using the secure form to activate AI forensic scanning and view the verification analysis.
                 </p>
               </div>
             )}
@@ -304,7 +308,6 @@ export default function ScamDetectorPage() {
         </div>
 
       </div>
-      <FloatingBot />
-    </main>
+    </div>
   );
 }

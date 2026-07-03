@@ -1,21 +1,17 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Navbar } from '../../components/Navbar';
-import { FloatingBot } from '../../components/FloatingBot';
 import {
-  ShieldAlert,
   Upload,
   FileImage,
   Video,
   Music,
-  Download,
   Printer,
-  CheckCircle,
-  AlertTriangle,
   Loader2,
   Lock,
-  ExternalLink
+  ExternalLink,
+  ShieldCheck,
+  AlertTriangle
 } from 'lucide-react';
 
 export default function DeepfakePage() {
@@ -77,39 +73,35 @@ export default function DeepfakePage() {
   };
 
   return (
-    <main className="min-h-screen bg-slate-950 text-white flex flex-col print:bg-white print:text-black">
-      {/* Hide navbar on print */}
-      <div className="print:hidden">
-        <Navbar onTriggerWomensSOS={() => {}} />
-      </div>
-
-      <div className="flex-1 max-w-6xl w-full mx-auto px-4 py-8 space-y-8 flex flex-col justify-center">
+    <div className="gov-section-gray min-h-screen print:bg-white print:p-0">
+      <div className="gov-container flex flex-col justify-center py-8 print:p-0">
         
         {/* Page title */}
-        <div className="text-center max-w-2xl mx-auto space-y-2 print:hidden">
-          <h1 className="font-extrabold text-2xl sm:text-3xl uppercase tracking-wider text-white flex items-center justify-center space-x-2">
-            <Lock className="h-7 w-7 text-emerald-400" />
-            <span>AI Deepfake Forensic Reporting Center</span>
+        <div className="text-center max-w-2xl mx-auto mb-8 print:hidden">
+          <h1 className="gov-section-title flex items-center justify-center gap-2 mb-2">
+            <Lock className="h-7 w-7 text-[#0057A8]" />
+            AI Deepfake Forensic Reporting Center
           </h1>
-          <p className="text-xs text-slate-405 leading-relaxed">
-            Verify image, video, and audio authentication. Analyze media for deepfake manipulations, generate formal cryptographic evidence certificates, and connect to national reporting systems.
+          <p className="gov-section-subtitle mb-0">
+            Verify image, video, and audio authenticity. Analyze media for deepfake manipulations, generate formal cryptographic evidence certificates, and connect to national reporting systems.
           </p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
           
           {/* Left Panel: Form Control (Hidden in Print Mode) */}
-          <form onSubmit={handleVerify} className="bg-slate-900 border border-slate-850 p-6 rounded-xl shadow-xl space-y-6 print:hidden">
+          <form onSubmit={handleVerify} className="bg-white border border-gray-200 p-6 rounded shadow-sm border-t-4 border-t-[#0057A8] print:hidden">
             
             {error && (
-              <div className="bg-red-950/60 border border-red-800 text-red-300 rounded p-3 text-xs">
-                <span>{error}</span>
+              <div className="gov-notice gov-notice-danger mb-4 flex items-start gap-2">
+                <AlertTriangle className="h-4.5 w-4.5 mt-0.5 shrink-0 text-[#CC0001]" />
+                <span className="text-sm font-semibold text-[#CC0001]">{error}</span>
               </div>
             )}
 
             {/* Selector buttons */}
-            <div>
-              <label className="block text-xs font-extrabold uppercase tracking-widest text-slate-400 mb-3">
+            <div className="mb-6">
+              <label className="block text-xs font-bold uppercase text-[#1B2B6B] mb-3">
                 Media Content Type
               </label>
               <div className="grid grid-cols-3 gap-2">
@@ -128,10 +120,10 @@ export default function DeepfakePage() {
                         setFile(null);
                         setResult(null);
                       }}
-                      className={`py-2 rounded border font-bold text-xs uppercase tracking-wide flex items-center justify-center space-x-1.5 transition-all ${
+                      className={`py-2 rounded border text-xs font-bold uppercase tracking-wide flex items-center justify-center gap-1.5 transition-colors ${
                         mediaType === type.id
-                          ? 'bg-emerald-600 border-emerald-500 text-white shadow shadow-emerald-950'
-                          : 'bg-slate-950 border-slate-850 text-slate-400 hover:text-slate-350'
+                          ? 'bg-[#0057A8] border-[#0057A8] text-white shadow-sm'
+                          : 'bg-white border-gray-300 text-gray-600 hover:text-[#0057A8] hover:bg-blue-50'
                       }`}
                     >
                       <Icon className="h-4 w-4" />
@@ -143,42 +135,42 @@ export default function DeepfakePage() {
             </div>
 
             {/* Media Upload dragbox */}
-            <div>
-              <label className="block text-xs font-extrabold uppercase tracking-widest text-slate-400 mb-2">
+            <div className="mb-6">
+              <label className="block text-xs font-bold uppercase text-[#1B2B6B] mb-2">
                 Upload Media File
               </label>
 
               {!file ? (
-                <div className="bg-slate-950 border-2 border-dashed border-slate-800 rounded-lg p-8 flex flex-col items-center justify-center text-center cursor-pointer hover:border-slate-700 relative">
+                <div className="bg-gray-50 border-2 border-dashed border-gray-300 rounded p-8 flex flex-col items-center justify-center text-center cursor-pointer hover:border-[#0057A8] hover:bg-blue-50 relative transition-colors">
                   <input
                     type="file"
                     accept={mediaType === 'image' ? 'image/*' : mediaType === 'video' ? 'video/*' : 'audio/*'}
                     onChange={handleFileChange}
                     className="absolute inset-0 opacity-0 cursor-pointer"
                   />
-                  <Upload className="h-10 w-10 text-slate-500 mb-2 animate-bounce" />
-                  <span className="text-xs font-bold text-slate-300">Choose media for deepfake check</span>
-                  <span className="text-[9px] text-slate-500 mt-1">Supports PNG, JPG, MP4, WAV, MP3 formats</span>
+                  <Upload className="h-10 w-10 text-[#0057A8] mb-2 opacity-70" />
+                  <span className="text-sm font-bold text-[#1B2B6B]">Choose media for deepfake check</span>
+                  <span className="text-xs text-gray-500 mt-1">Supports PNG, JPG, MP4, WAV, MP3 formats</span>
                 </div>
               ) : (
-                <div className="bg-slate-950 border border-slate-850 p-4 rounded-lg flex items-center justify-between">
-                  <div className="flex items-center space-x-3 min-w-0">
+                <div className="bg-blue-50 border border-blue-200 p-4 rounded flex items-center justify-between">
+                  <div className="flex items-center gap-3 min-w-0">
                     {mediaType === 'image' ? (
-                      <FileImage className="h-8 w-8 text-emerald-500 shrink-0" />
+                      <FileImage className="h-8 w-8 text-[#0057A8] shrink-0" />
                     ) : mediaType === 'video' ? (
-                      <Video className="h-8 w-8 text-emerald-500 shrink-0" />
+                      <Video className="h-8 w-8 text-[#0057A8] shrink-0" />
                     ) : (
-                      <Music className="h-8 w-8 text-emerald-500 shrink-0" />
+                      <Music className="h-8 w-8 text-[#0057A8] shrink-0" />
                     )}
                     <div className="min-w-0">
-                      <p className="text-xs font-bold text-white truncate">{file.name}</p>
-                      <p className="text-[10px] text-slate-500">{(file.size / (1024 * 1024)).toFixed(2)} MB</p>
+                      <p className="text-sm font-bold text-[#1B2B6B] truncate">{file.name}</p>
+                      <p className="text-xs text-gray-500">{(file.size / (1024 * 1024)).toFixed(2)} MB</p>
                     </div>
                   </div>
                   <button
                     type="button"
                     onClick={handleRemoveFile}
-                    className="text-red-400 hover:text-red-300 px-2.5 py-1 text-xs font-bold"
+                    className="text-[#CC0001] hover:bg-red-50 px-3 py-1.5 rounded text-xs font-bold"
                   >
                     Clear
                   </button>
@@ -189,15 +181,18 @@ export default function DeepfakePage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3.5 rounded-lg text-sm font-extrabold uppercase tracking-wider transition-all shadow-md hover:shadow-emerald-950 flex items-center justify-center space-x-2"
+              className="gov-btn-primary w-full justify-center py-3 text-sm tracking-wider"
             >
               {loading ? (
                 <>
-                  <Loader2 className="h-4.5 w-4.5 animate-spin" />
+                  <Loader2 className="h-5 w-5 animate-spin" />
                   <span>AI Forensic Scanning Active...</span>
                 </>
               ) : (
-                <span>EVALUATE AND REPORT</span>
+                <>
+                  <Lock className="h-4 w-4" />
+                  <span>EVALUATE AND REPORT</span>
+                </>
               )}
             </button>
           </form>
@@ -208,61 +203,61 @@ export default function DeepfakePage() {
               <div className="space-y-6">
                 
                 {/* Print Layout Envelope (Stays hidden in screen UI or styles nicely, prints perfectly) */}
-                <div className="bg-white text-slate-900 border border-slate-350 p-6 rounded-xl shadow-xl space-y-6 font-serif border-t-8 border-t-emerald-700 print:shadow-none print:border-slate-300">
+                <div className="bg-white text-gray-900 border border-gray-300 p-8 rounded shadow-sm space-y-6 border-t-[12px] border-t-[#0057A8] print:shadow-none print:border-t-[12px] print:border-[#0057A8] print:rounded-none">
                   {/* National Emblem emblem block */}
-                  <div className="border-b-2 border-slate-900 pb-4 text-center space-y-1">
-                    <span className="font-extrabold text-sm uppercase tracking-widest block font-sans">
-                      DEPARTMENT OF CIVIL SECURITY
+                  <div className="border-b-2 border-[#1B2B6B] pb-4 text-center space-y-1">
+                    <span className="font-bold text-sm uppercase tracking-widest block text-[#1B2B6B]">
+                      GOVERNMENT OF INDIA
                     </span>
-                    <span className="text-[10px] uppercase font-bold tracking-wider text-slate-550 block font-sans">
+                    <span className="text-xs uppercase font-bold tracking-wider text-gray-600 block">
                       Cyber Forensic Verification Division
                     </span>
-                    <h2 className="font-black text-base uppercase tracking-wider mt-1 text-emerald-800">
+                    <h2 className="font-black text-lg uppercase tracking-wider mt-2 text-[#1B2B6B]">
                       FORENSIC EVIDENCE REPORT SUMMARY
                     </h2>
                   </div>
 
-                  <div className="space-y-4 text-xs font-sans">
+                  <div className="space-y-4 text-sm">
                     {/* Verdict status */}
-                    <div className="flex justify-between items-center border-b border-slate-200 pb-2">
-                      <span className="font-bold text-slate-500">FORENSIC VERDICT:</span>
-                      <span className={`font-black uppercase tracking-wider px-2 py-0.5 rounded ${
-                        result.isDeepfake ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                    <div className="flex justify-between items-center border-b border-gray-200 pb-3">
+                      <span className="font-bold text-gray-600">FORENSIC VERDICT:</span>
+                      <span className={`font-black uppercase tracking-wider px-3 py-1 rounded text-xs ${
+                        result.isDeepfake ? 'bg-red-50 text-[#CC0001] border border-red-200' : 'bg-green-50 text-[#138808] border border-green-200'
                       }`}>
                         {result.isDeepfake ? 'DEEPFAKE DETECTED (HIGH RISK)' : 'AUTHENTIC BIOLOGICAL SIGNAL'}
                       </span>
                     </div>
 
                     {/* Meta info */}
-                    <div className="grid grid-cols-2 gap-3 text-[11px] leading-relaxed">
+                    <div className="grid grid-cols-2 gap-4 text-xs leading-relaxed">
                       <div>
-                        <span className="text-slate-400 block font-bold">SOURCE FILE</span>
-                        <span className="font-bold text-slate-800 truncate block">{result.fileName}</span>
+                        <span className="text-gray-500 block font-bold uppercase tracking-wider mb-0.5">SOURCE FILE</span>
+                        <span className="font-bold text-gray-900 truncate block">{result.fileName}</span>
                       </div>
                       <div>
-                        <span className="text-slate-400 block font-bold">VERIFICATION HASH</span>
-                        <span className="font-mono text-slate-800 select-all block truncate">{result.evidenceHash}</span>
+                        <span className="text-gray-500 block font-bold uppercase tracking-wider mb-0.5">VERIFICATION HASH</span>
+                        <span className="font-mono text-gray-900 select-all block truncate">{result.evidenceHash}</span>
                       </div>
                       <div>
-                        <span className="text-slate-400 block font-bold">FILE TYPE / SIZE</span>
-                        <span className="font-bold text-slate-800 block">
+                        <span className="text-gray-500 block font-bold uppercase tracking-wider mb-0.5">FILE TYPE / SIZE</span>
+                        <span className="font-bold text-gray-900 block">
                           {result.mimeType} / {(result.fileSize / (1024 * 1024)).toFixed(2)} MB
                         </span>
                       </div>
                       <div>
-                        <span className="text-slate-400 block font-bold">TIMESTAMP VERIFIED</span>
-                        <span className="font-bold text-slate-800 block">
+                        <span className="text-gray-500 block font-bold uppercase tracking-wider mb-0.5">TIMESTAMP VERIFIED</span>
+                        <span className="font-bold text-gray-900 block">
                           {new Date(result.timestamp).toLocaleString()}
                         </span>
                       </div>
                     </div>
 
                     {/* Indicators list */}
-                    <div className="pt-2 border-t border-slate-200 space-y-2">
-                      <span className="font-bold text-slate-500 block uppercase tracking-wider text-[10px]">
+                    <div className="pt-3 border-t border-gray-200 space-y-2">
+                      <span className="font-bold text-gray-600 block uppercase tracking-wider text-xs">
                         Forensic Scan Diagnostic Indicators
                       </span>
-                      <ul className="space-y-1.5 list-disc pl-4 text-slate-700 text-[11px] font-medium leading-relaxed">
+                      <ul className="space-y-1.5 list-disc pl-5 text-gray-800 text-sm font-medium leading-relaxed">
                         {result.indicators.map((ind: string, idx: number) => (
                           <li key={idx}>{ind}</li>
                         ))}
@@ -270,28 +265,28 @@ export default function DeepfakePage() {
                     </div>
 
                     {/* Verification score */}
-                    <div className="pt-2 border-t border-slate-200">
-                      <div className="flex justify-between text-[11px] font-bold text-slate-500 mb-1">
+                    <div className="pt-3 border-t border-gray-200">
+                      <div className="flex justify-between text-xs font-bold text-gray-600 mb-1.5">
                         <span>Confidence Score</span>
                         <span>{result.confidence}%</span>
                       </div>
-                      <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                      <div className="w-full bg-gray-200 h-2 rounded-full overflow-hidden">
                         <div
-                          className="bg-emerald-700 h-1.5 rounded-full"
+                          className="bg-[#1B2B6B] h-2 rounded-full"
                           style={{ width: `${result.confidence}%` }}
                         />
                       </div>
                     </div>
 
                     {/* Official footer */}
-                    <div className="pt-4 border-t border-slate-200 border-dashed flex justify-between items-end text-[9px] text-slate-500 leading-tight">
+                    <div className="pt-6 border-t border-gray-300 border-dashed flex justify-between items-end text-xs text-gray-600 leading-tight">
                       <div>
-                        <p className="font-bold uppercase text-[8px]">DIGITAL SYSTEM SIGNATURE</p>
-                        <p className="font-mono">AI-EGN-SIGN: {result.evidenceHash.slice(8, 20)}</p>
+                        <p className="font-bold uppercase text-[10px] text-gray-500">DIGITAL SYSTEM SIGNATURE</p>
+                        <p className="font-mono text-gray-800 mt-0.5">AI-EGN-SIGN: {result.evidenceHash.slice(8, 20)}</p>
                       </div>
                       <div className="text-right">
-                        <p className="font-bold">STATUS ACTIVE</p>
-                        <p>Document Valid for Legal Complaints</p>
+                        <p className="font-bold text-[#1B2B6B]">STATUS ACTIVE</p>
+                        <p className="text-[10px]">Document Valid for Legal Complaints</p>
                       </div>
                     </div>
                   </div>
@@ -299,10 +294,10 @@ export default function DeepfakePage() {
                 </div>
 
                 {/* Report Action buttons (Hidden in Print Mode) */}
-                <div className="flex space-x-3 print:hidden">
+                <div className="flex flex-col sm:flex-row gap-3 print:hidden">
                   <button
                     onClick={handlePrintEvidence}
-                    className="flex-1 bg-slate-900 hover:bg-slate-850 text-white py-3 border border-slate-800 rounded-lg text-xs font-extrabold uppercase tracking-wide flex items-center justify-center space-x-1.5 shadow"
+                    className="gov-btn-outline flex-1 justify-center py-3"
                   >
                     <Printer className="h-4.5 w-4.5" />
                     <span>Print Evidence Document</span>
@@ -311,7 +306,7 @@ export default function DeepfakePage() {
                     href="https://cybercrime.gov.in"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-lg text-xs font-extrabold uppercase tracking-wide flex items-center justify-center space-x-1.5 shadow"
+                    className="gov-btn-primary flex-1 justify-center py-3"
                   >
                     <span>Connect Cyber Portal</span>
                     <ExternalLink className="h-4.5 w-4.5" />
@@ -320,10 +315,10 @@ export default function DeepfakePage() {
 
               </div>
             ) : (
-              <div className="bg-slate-900/40 border border-slate-850/60 rounded-xl p-8 h-[380px] flex flex-col items-center justify-center text-center text-slate-500 print:hidden">
-                <Lock className="h-10 w-10 text-slate-655 mb-3 animate-pulse" />
-                <h3 className="font-extrabold text-xs uppercase tracking-widest text-slate-400 mb-1">Evidence Certificate ready</h3>
-                <p className="text-[10px] max-w-xs leading-relaxed">
+              <div className="bg-white border border-gray-200 border-dashed rounded p-8 h-full min-h-[400px] flex flex-col items-center justify-center text-center text-gray-500 bg-gray-50 print:hidden">
+                <ShieldCheck className="h-12 w-12 text-[#0057A8] mb-4 opacity-50" />
+                <h3 className="font-bold text-sm uppercase tracking-widest text-[#1B2B6B] mb-2">Evidence Certificate Ready</h3>
+                <p className="text-sm max-w-sm leading-relaxed">
                   Upload an image, video, or voice file and run analysis to compile forensic verification logs and download complaint certificates.
                 </p>
               </div>
@@ -333,7 +328,6 @@ export default function DeepfakePage() {
         </div>
 
       </div>
-      <FloatingBot />
-    </main>
+    </div>
   );
 }

@@ -1,8 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Navbar } from '../../components/Navbar';
-import { FloatingBot } from '../../components/FloatingBot';
 import {
   Activity,
   Volume2,
@@ -173,47 +171,45 @@ export default function FirstAidPage() {
   }, [topic, language]);
 
   return (
-    <main className="min-h-screen bg-slate-950 text-white flex flex-col">
-      <Navbar onTriggerWomensSOS={() => {}} />
-
-      <div className="flex-1 max-w-5xl w-full mx-auto px-4 py-8 space-y-8 flex flex-col justify-center">
+    <div className="gov-section-gray min-h-screen">
+      <div className="gov-container flex flex-col justify-center py-8">
         
         {/* Title panel */}
-        <div className="mb-4 text-center md:text-left flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
-            <h1 className="font-extrabold text-2xl sm:text-3xl uppercase tracking-wider text-white flex items-center justify-center md:justify-start space-x-2">
-              <Activity className="h-7 w-7 text-red-500 animate-pulse" />
-              <span>Voice-Guided Emergency First Aid</span>
+            <h1 className="gov-section-title flex items-center gap-2">
+              <Activity className="h-7 w-7 text-[#CC0001] animate-pulse" />
+              Voice-Guided Emergency First Aid
             </h1>
-            <p className="text-xs text-slate-400 mt-1">
+            <p className="gov-section-subtitle mb-0">
               Immediate medical instructions. Toggle voice guide to listen to verbal steps in your preferred language.
             </p>
           </div>
 
           {/* Language selection */}
-          <div className="flex items-center justify-center space-x-2 bg-slate-900 border border-slate-850 p-2 rounded-lg">
-            <span className="text-[10px] font-bold text-slate-450 uppercase tracking-widest">Synthesis Language</span>
+          <div className="flex items-center gap-2 bg-white border border-gray-200 p-2 rounded shadow-sm shrink-0">
+            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Voice Language</span>
             <select
               value={language}
               onChange={(e) => setLanguage(e.target.value)}
-              className="bg-slate-950 border border-slate-800 text-xs font-bold rounded px-2.5 py-1 text-white focus:outline-none"
+              className="bg-gray-50 border border-gray-300 text-xs font-bold rounded px-2.5 py-1.5 text-gray-800 focus:outline-none focus:border-[#0057A8]"
             >
-              <option value="english">English (US/UK)</option>
+              <option value="english">English</option>
               <option value="hindi">हिन्दी (Hindi)</option>
             </select>
           </div>
         </div>
 
         {/* First Aid topics tabs selector */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 border-b border-slate-850 pb-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 border-b border-gray-200 pb-4 mb-6">
           {Object.keys(topics).map((key) => (
             <button
               key={key}
               onClick={() => setTopic(key)}
-              className={`py-2 rounded-lg text-xs font-extrabold uppercase border transition-all ${
+              className={`py-2 rounded text-[11px] font-bold uppercase border transition-colors ${
                 topic === key
-                  ? 'bg-red-600 border-red-500 text-white shadow shadow-red-950 scale-[1.02]'
-                  : 'bg-slate-900 border-slate-850 text-slate-400 hover:text-slate-300'
+                  ? 'bg-[#CC0001] border-[#CC0001] text-white shadow-sm'
+                  : 'bg-white border-gray-200 text-gray-600 hover:text-[#0057A8] hover:bg-blue-50'
               }`}
             >
               {topics[key].title.split(' ')[0]}
@@ -222,41 +218,41 @@ export default function FirstAidPage() {
         </div>
 
         {/* Visual guide slide panel */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
           
           {/* Left panel: Visual & Speech control */}
-          <div className="md:col-span-2 bg-slate-900 border border-slate-850 rounded-xl p-6 shadow-xl space-y-6">
+          <div className="lg:col-span-2 bg-white border border-gray-200 rounded p-6 shadow-sm border-t-4 border-t-[#CC0001]">
             
             {/* Visual slide card */}
-            <div className="bg-slate-950 p-8 rounded-xl border border-slate-850 text-center space-y-4 min-h-[220px] flex flex-col justify-center relative">
-              <span className="absolute top-4 left-4 text-[10px] bg-slate-900 text-slate-450 px-2 py-0.5 rounded font-mono font-bold">
+            <div className="bg-red-50 p-8 rounded border border-red-100 text-center space-y-4 min-h-[260px] flex flex-col justify-center relative mb-6">
+              <span className="absolute top-4 left-4 text-[10px] bg-white border border-red-200 text-[#CC0001] px-2 py-1 rounded font-bold tracking-wider">
                 STEP {activeStep + 1} OF {stepsList.length}
               </span>
-              <h2 className="font-extrabold text-base sm:text-xl text-emerald-400 uppercase tracking-wide px-4">
+              <h2 className="font-bold text-lg sm:text-xl text-[#CC0001] uppercase tracking-wide px-4">
                 {stepsList[activeStep].visualText}
               </h2>
-              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-semibold max-w-md mx-auto">
+              <p className="text-sm sm:text-base text-gray-800 leading-relaxed font-medium max-w-lg mx-auto">
                 {stepsList[activeStep].text}
               </p>
             </div>
 
             {/* Audio Synthesis play buttons bar */}
-            <div className="flex items-center justify-between bg-slate-950 p-3.5 border border-slate-850 rounded-lg">
-              <div className="flex items-center space-x-2">
+            <div className="flex items-center justify-between bg-gray-50 p-4 border border-gray-200 rounded mb-4">
+              <div className="flex items-center gap-4">
                 <button
                   onClick={handlePlayVoice}
-                  className={`p-3 rounded-full flex items-center justify-center transition-all ${
+                  className={`p-3 rounded-full flex items-center justify-center transition-all shadow-sm ${
                     isPlaying
-                      ? 'bg-red-655 text-white animate-pulse'
-                      : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                      ? 'bg-[#FF6200] text-white animate-pulse'
+                      : 'bg-[#1B2B6B] text-white hover:bg-[#0057A8]'
                   }`}
                   title={isPlaying ? 'Pause Voice' : 'Play Voice Instructions'}
                 >
-                  {isPlaying ? <Pause className="h-4.5 w-4.5" /> : <Play className="h-4.5 w-4.5" />}
+                  {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
                 </button>
                 <div className="text-left">
-                  <span className="text-[9px] text-slate-450 font-bold uppercase tracking-wider block">Voice Assistant status</span>
-                  <span className="text-xs font-bold text-white">
+                  <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider block mb-0.5">Voice Assistant Status</span>
+                  <span className={`text-sm font-bold ${isPlaying ? 'text-[#FF6200]' : 'text-[#1B2B6B]'}`}>
                     {isPlaying ? 'Speaking instruction...' : 'Voice guide muted'}
                   </span>
                 </div>
@@ -265,10 +261,10 @@ export default function FirstAidPage() {
               {/* Reset */}
               <button
                 onClick={handleReset}
-                className="text-slate-400 hover:text-white p-2"
+                className="text-gray-400 hover:text-[#1B2B6B] p-2 hover:bg-gray-100 rounded transition-colors"
                 title="Restart Guide"
               >
-                <RotateCcw className="h-4.5 w-4.5" />
+                <RotateCcw className="h-5 w-5" />
               </button>
             </div>
 
@@ -277,7 +273,7 @@ export default function FirstAidPage() {
               <button
                 onClick={handlePrev}
                 disabled={activeStep === 0}
-                className="border border-slate-800 text-slate-350 hover:bg-slate-950 px-4 py-2.5 rounded-lg text-xs font-bold flex items-center space-x-1.5 disabled:opacity-30 transition-all"
+                className="gov-btn-outline px-5 py-2.5 disabled:opacity-50"
               >
                 <ArrowLeft className="h-4 w-4" />
                 <span>Previous Step</span>
@@ -286,7 +282,7 @@ export default function FirstAidPage() {
               <button
                 onClick={handleNext}
                 disabled={activeStep === stepsList.length - 1}
-                className="bg-slate-950 hover:bg-slate-850 text-white border border-slate-800 px-4 py-2.5 rounded-lg text-xs font-bold flex items-center space-x-1.5 disabled:opacity-30 transition-all"
+                className="gov-btn-primary px-6 py-2.5 disabled:opacity-50"
               >
                 <span>Next Step</span>
                 <ArrowRight className="h-4 w-4" />
@@ -296,26 +292,26 @@ export default function FirstAidPage() {
           </div>
 
           {/* Right panel: Information advisory */}
-          <div className="space-y-6">
-            <div className="bg-slate-900 border border-slate-850 rounded-xl p-6 shadow-xl space-y-4">
-              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center space-x-1.5">
-                <BookOpen className="h-4.5 w-4.5 text-emerald-400" />
+          <div className="flex flex-col gap-6">
+            <div className="bg-white border border-gray-200 rounded p-6 shadow-sm border-t-4 border-t-[#0057A8]">
+              <h3 className="text-xs font-bold text-[#1B2B6B] uppercase tracking-widest flex items-center gap-1.5 mb-3">
+                <BookOpen className="h-4 w-4 text-[#0057A8]" />
                 <span>First Aid Overview</span>
               </h3>
-              <p className="text-xs text-slate-300 leading-relaxed">
-                You are currently viewing instructions for <strong className="text-white">{activeTopic.title}</strong>. These guidelines are compiled from official ambulance guidelines.
+              <p className="text-sm text-gray-700 leading-relaxed mb-4">
+                You are currently viewing instructions for <strong className="text-gray-900">{activeTopic.title}</strong>. These guidelines are compiled from official medical guidelines.
               </p>
-              <div className="bg-slate-950 p-3 border border-slate-850 rounded text-[11px] leading-relaxed text-slate-400">
-                <span className="font-bold text-white uppercase block mb-1">Stayin' Alive Beat Rule</span>
-                During CPR, deliver compressions at a tempo of 100 to 120 compressions per minute. Sing the chorus of the popular song "Stayin' Alive" by the Bee Gees to maintain the correct rhythmic interval.
+              <div className="bg-blue-50 p-4 border border-blue-100 rounded text-xs leading-relaxed text-gray-800">
+                <span className="font-bold text-[#0057A8] uppercase block mb-1">Stayin' Alive Beat Rule</span>
+                During CPR, deliver compressions at a tempo of 100 to 120 compressions per minute. Sing the chorus of the popular song "Stayin' Alive" to maintain the correct rhythmic interval.
               </div>
             </div>
 
-            <div className="bg-slate-900 border border-slate-850 p-4 rounded-xl flex items-start space-x-3">
-              <Info className="h-5 w-5 text-emerald-500 mt-0.5 shrink-0" />
-              <div className="text-xs text-slate-400 leading-relaxed">
-                <span className="font-bold text-white uppercase block mb-0.5">DISCLAIMER NOTICE</span>
-                First aid guides are meant for provisional stabilization only. Always dispatch emergency medical services at <strong className="text-white">108</strong> or <strong className="text-white">102</strong> immediately.
+            <div className="gov-notice gov-notice-danger flex items-start gap-3">
+              <Info className="h-5 w-5 text-[#CC0001] mt-0.5 shrink-0" />
+              <div className="text-sm text-[#990000] leading-relaxed">
+                <span className="font-bold uppercase block mb-1">DISCLAIMER NOTICE</span>
+                First aid guides are meant for provisional stabilization only. Always dispatch emergency medical services at <strong className="font-mono text-base bg-[#CC0001] text-white px-1.5 py-0.5 rounded ml-1">108</strong> or <strong className="font-mono text-base bg-[#CC0001] text-white px-1.5 py-0.5 rounded ml-1">112</strong> immediately.
               </div>
             </div>
           </div>
@@ -323,7 +319,6 @@ export default function FirstAidPage() {
         </div>
 
       </div>
-      <FloatingBot />
-    </main>
+    </div>
   );
 }

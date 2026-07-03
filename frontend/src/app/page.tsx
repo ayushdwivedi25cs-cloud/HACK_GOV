@@ -1,423 +1,657 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
-import { useAuth } from '../context/AuthContext';
-import { Navbar } from '../components/Navbar';
-import { SOSModal } from '../components/SOSModal';
-import { InteractiveMap } from '../components/InteractiveMap';
-import { FloatingBot } from '../components/FloatingBot';
-import {
-  ShieldAlert,
-  Flame,
-  Activity,
-  Users,
-  Compass,
-  AlertOctagon,
-  Siren,
-  Phone,
-  Info,
-  MapPin,
-  Clock,
-  ShieldCheck,
-  FileText,
-  UserCheck
-} from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
+import { useLanguage } from '../context/LanguageContext';
+import { useAuth } from '../context/AuthContext';
+import {
+  Activity, Shield, Flame, Monitor, Heart, Users, Baby, Search,
+  AlertTriangle, FileText, Phone, MapPin, ChevronRight, Send,
+  Mic, MicOff, Volume2, BookOpen, Loader2, CheckCircle,
+  Siren, Info, ArrowRight, Navigation, UserCheck
+} from 'lucide-react';
+
+const ALERTS = [
+  { id: 1, type: 'warning', text: 'IMD Issues Heavy Rainfall Warning for Coastal Karnataka — 02 July 2024' },
+  { id: 2, type: 'info', text: 'Cyber Crime Helpline 1930 now operational 24/7 — Ministry of Home Affairs' },
+  { id: 3, type: 'warning', text: 'Orange Alert: Flash Floods Possible in Western Ghats Districts — NDMA Advisory' },
+  { id: 4, type: 'info', text: 'New Missing Person AI Portal Launched — Register and Track Cases Digitally' },
+  { id: 5, type: 'warning', text: 'Heat Wave Advisory: Stay Hydrated — Temperatures may reach 43°C in Northern Plains' },
+];
+
+const HELPLINES = [
+  { number: '112', label: 'National Emergency', color: 'border-l-[#CC0001]' },
+  { number: '108', label: 'Ambulance (EMRI)', color: 'border-l-[#CC0001]' },
+  { number: '100', label: 'Police', color: 'border-l-[#0057A8]' },
+  { number: '101', label: 'Fire Brigade', color: 'border-l-[#FF6200]' },
+  { number: '181', label: 'Women Helpline', color: 'border-l-[#8B0045]' },
+  { number: '1098', label: 'Childline', color: 'border-l-[#138808]' },
+  { number: '1930', label: 'Cyber Crime', color: 'border-l-[#0057A8]' },
+  { number: '1078', label: 'NDMA Disaster', color: 'border-l-[#FF6200]' },
+];
+
+const GUIDANCE_STEPS = [
+  { icon: '🪪', title: 'Lost Aadhaar Card', href: '/guidance', steps: 3, time: '15 min' },
+  { icon: '💳', title: 'Lost PAN Card', href: '/guidance', steps: 4, time: '7 days' },
+  { icon: '📗', title: 'Lost Passport', href: '/guidance', steps: 5, time: '30 days' },
+  { icon: '🚗', title: 'Lost Driving Licence', href: '/guidance', steps: 4, time: '15 days' },
+  { icon: '🔒', title: 'Cyber Crime Complaint', href: '/guidance', steps: 3, time: '24 hrs' },
+  { icon: '👩‍⚖️', title: "Women's Safety Complaint", href: '/guidance', steps: 3, time: 'Immediate' },
+];
 
 export default function HomePage() {
-  const { user, triggerEmergencySOS, isAuthenticated } = useAuth();
-  const [sosModalOpen, setSosModalOpen] = useState(false);
-  const [womensSOSActive, setWomensSOSActive] = useState(false);
-  const [womensSOSLog, setWomensSOSLog] = useState<any[]>([]);
-  const [locating, setLocating] = useState(false);
-  const [womensLocation, setWomensLocation] = useState<any>(null);
+  const { t } = useLanguage();
+  const { user, isAuthenticated } = useAuth();
+  const [aiMessage, setAiMessage] = useState('');
+  const [aiMessages, setAiMessages] = useState<{ role: 'user' | 'bot'; text: string }[]>([
+    { role: 'bot', text: 'Namaste! I am your Government AI Help Desk. How can I assist you today? You can type in English, हिन्दी, or ಕನ್ನಡ.' }
+  ]);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef<any>(null);
+  const chatEndRef = useRef<HTMLDivElement>(null);
+  const [tickerPaused, setTickerPaused] = useState(false);
 
-  // Web Audio Context reference for synthesizer alarm
-  const audioCtxRef = useRef<AudioContext | null>(null);
-  const oscillatorRef = useRef<OscillatorNode | null>(null);
-  const gainNodeRef = useRef<GainNode | null>(null);
-
-  // Scroll to Map handler
-  const handleScrollToMap = () => {
-    const mapSection = document.getElementById('map-section');
-    if (mapSection) {
-      mapSection.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
-
-  // Trigger Women's Safety SOS
-  const handleTriggerWomensSOS = async () => {
-    if (womensSOSActive) {
-      // Deactivate if already active
-      stopSiren();
-      setWomensSOSActive(false);
-      setWomensLocation(null);
-      setWomensSOSLog([]);
-      return;
-    }
-
-    setWomensSOSActive(true);
-    setLocating(true);
-    playSiren();
-
-    // Log tracking
-    const logs = [`[${new Date().toLocaleTimeString()}] WOMEN'S SAFETY SOS INITIATED`] ;
-    setWomensSOSLog(logs);
-
-    let lat = 12.9716;
-    let lng = 77.5946;
-    let locationStr = 'Location access pending...';
-
-    // 1. Capture Location
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          lat = position.coords.latitude;
-          lng = position.coords.longitude;
-          locationStr = `GPS Verified (Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)})`;
-          
-          setWomensLocation({ lat, lng, address: locationStr });
-          setLocating(false);
-
-          setWomensSOSLog(prev => [
-            ...prev,
-            `[${new Date().toLocaleTimeString()}] Location Captured: ${locationStr}`,
-            `[${new Date().toLocaleTimeString()}] Initiating API Dispatch Logs`
-          ]);
-
-          // 2. Submit alert to backend
-          try {
-            const data = await triggerEmergencySOS("Women's Safety", { lat, lng, address: 'Women\'s Safety Incident (Pulsing Siren)' });
-            if (data.simulatedAlerts) {
-              data.simulatedAlerts.forEach((alert: any) => {
-                setWomensSOSLog(prev => [
-                  ...prev,
-                  `[${new Date().toLocaleTimeString()}] Sent SMS & WhatsApp to ${alert.contactName} (${alert.relationship}) - Status: DELIVERED`
-                ]);
-              });
-            }
-          } catch (e) {
-            setWomensSOSLog(prev => [...prev, `[${new Date().toLocaleTimeString()}] Fallback dispatch sent to Local Police cell.`]);
-          }
-        },
-        (error) => {
-          setWomensLocation({ lat, lng, address: 'GPS access denied, tracking default sector.' });
-          setLocating(false);
-          setWomensSOSLog(prev => [
-            ...prev,
-            `[${new Date().toLocaleTimeString()}] GPS access denied, using central district fallback.`,
-            `[${new Date().toLocaleTimeString()}] Sent emergency broadcast to National safety cells.`
-          ]);
-        }
-      );
-    } else {
-      setWomensLocation({ lat, lng, address: 'GPS not supported on device.' });
-      setLocating(false);
-    }
-  };
-
-  // Synthesize alarm sound using browser Web Audio API
-  const playSiren = () => {
-    try {
-      if (typeof window === 'undefined') return;
-      
-      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-      if (!AudioContextClass) return;
-
-      const ctx = new AudioContextClass();
-      audioCtxRef.current = ctx;
-
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-
-      osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(800, ctx.currentTime);
-      
-      // Siren modulation
-      osc.frequency.linearRampToValueAtTime(1200, ctx.currentTime + 0.5);
-      osc.frequency.linearRampToValueAtTime(800, ctx.currentTime + 1);
-      
-      oscillatorRef.current = osc;
-      gainNodeRef.current = gain;
-
-      // Loop frequency oscillation every second
-      let isHigh = false;
-      const interval = setInterval(() => {
-        if (!oscillatorRef.current || ctx.state === 'closed') {
-          clearInterval(interval);
-          return;
-        }
-        const time = ctx.currentTime;
-        oscillatorRef.current.frequency.cancelScheduledValues(time);
-        oscillatorRef.current.frequency.setValueAtTime(isHigh ? 800 : 1200, time);
-        oscillatorRef.current.frequency.linearRampToValueAtTime(isHigh ? 1200 : 800, time + 0.5);
-        isHigh = !isHigh;
-      }, 500);
-
-      gain.gain.setValueAtTime(0.3, ctx.currentTime); // moderate volume
-
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start();
-    } catch (e) {
-      console.error('Audio synthesizer failed:', e);
-    }
-  };
-
-  const stopSiren = () => {
-    try {
-      if (oscillatorRef.current) {
-        oscillatorRef.current.stop();
-        oscillatorRef.current.disconnect();
-        oscillatorRef.current = null;
-      }
-      if (audioCtxRef.current) {
-        audioCtxRef.current.close();
-        audioCtxRef.current = null;
-      }
-    } catch (e) {
-      console.error('Audio stop failed:', e);
-    }
-  };
-
-  // Clean up sound on unmount
   useEffect(() => {
-    return () => {
-      stopSiren();
-    };
-  }, []);
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [aiMessages]);
+
+  const sendAiMessage = async (msg: string) => {
+    if (!msg.trim()) return;
+    const userMsg = msg.trim();
+    setAiMessage('');
+    setAiMessages(prev => [...prev, { role: 'user', text: userMsg }]);
+    setAiLoading(true);
+    try {
+      const res = await fetch('http://localhost:5000/api/ai/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: userMsg, language: 'english' })
+      });
+      const data = await res.json();
+      setAiMessages(prev => [...prev, { role: 'bot', text: data.response || 'Sorry, I could not process your request.' }]);
+    } catch {
+      setAiMessages(prev => [...prev, { role: 'bot', text: 'Unable to reach the government AI service. Please try again or call 112 for immediate assistance.' }]);
+    } finally { setAiLoading(false); }
+  };
+
+  const toggleVoice = () => {
+    if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+      alert('Voice input not supported in this browser. Please use Chrome.'); return;
+    }
+    if (isListening) {
+      recognitionRef.current?.stop(); setIsListening(false); return;
+    }
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const rec = new SR();
+    rec.lang = 'en-IN'; rec.interimResults = false;
+    rec.onresult = (e: any) => { setAiMessage(e.results[0][0].transcript); setIsListening(false); };
+    rec.onerror = () => setIsListening(false);
+    rec.onend = () => setIsListening(false);
+    recognitionRef.current = rec;
+    rec.start(); setIsListening(true);
+  };
+
+  const services = [
+    { key: 'medical', icon: <Activity className="h-6 w-6" />, href: '/', color: 'text-red-600', bg: 'bg-red-50' },
+    { key: 'police', icon: <Shield className="h-6 w-6" />, href: '/', color: 'text-blue-700', bg: 'bg-blue-50' },
+    { key: 'fire', icon: <Flame className="h-6 w-6" />, href: '/', color: 'text-orange-600', bg: 'bg-orange-50' },
+    { key: 'cyber', icon: <Monitor className="h-6 w-6" />, href: '/scam-detector', color: 'text-indigo-700', bg: 'bg-indigo-50' },
+    { key: 'women', icon: <UserCheck className="h-6 w-6" />, href: '/#women-safety', color: 'text-pink-700', bg: 'bg-pink-50' },
+    { key: 'domestic', icon: <Heart className="h-6 w-6" />, href: '/guidance', color: 'text-purple-700', bg: 'bg-purple-50' },
+    { key: 'child', icon: <Baby className="h-6 w-6" />, href: '/', color: 'text-yellow-600', bg: 'bg-yellow-50' },
+    { key: 'disaster', icon: <AlertTriangle className="h-6 w-6" />, href: '/disaster', color: 'text-amber-600', bg: 'bg-amber-50' },
+    { key: 'missing', icon: <Search className="h-6 w-6" />, href: '/missing-person', color: 'text-teal-700', bg: 'bg-teal-50' },
+    { key: 'document', icon: <FileText className="h-6 w-6" />, href: '/guidance', color: 'text-slate-700', bg: 'bg-slate-50' },
+    { key: 'scam', icon: <Monitor className="h-6 w-6" />, href: '/scam-detector', color: 'text-violet-700', bg: 'bg-violet-50' },
+    { key: 'firstAid', icon: <Activity className="h-6 w-6" />, href: '/first-aid', color: 'text-emerald-700', bg: 'bg-emerald-50' },
+  ];
 
   return (
-    <main className="min-h-screen bg-slate-950 text-white flex flex-col">
-      <Navbar onTriggerWomensSOS={handleTriggerWomensSOS} />
-
-      {/* HERO SECTION */}
-      <section className="relative overflow-hidden bg-slate-900 border-b border-slate-850 px-4 py-16 md:py-24 text-center">
-        {/* Subtle grid graphic */}
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#1e293b_1px,transparent_1px),linear-gradient(to_bottom,#1e293b_1px,transparent_1px)] bg-[size:40px_40px] opacity-10" />
-
-        <div className="max-w-4xl mx-auto relative z-10 space-y-6">
-          <div className="inline-flex items-center space-x-2 bg-emerald-950 border border-emerald-800 text-emerald-400 px-3.5 py-1.5 rounded-full text-xs font-black uppercase tracking-wider shadow">
-            <ShieldCheck className="h-4 w-4" />
-            <span>National Crisis Response Infrastructure</span>
-          </div>
-
-          <h1 className="font-extrabold text-4xl sm:text-5xl md:text-6xl tracking-tight leading-none text-white">
-            AI Emergency Government Navigator
-          </h1>
-          <h2 className="font-extrabold text-lg sm:text-2xl text-red-500 uppercase tracking-widest leading-none">
-            One Platform. Every Emergency. Zero Confusion.
-          </h2>
-          <p className="max-w-2xl mx-auto text-sm sm:text-base text-slate-350 font-medium">
-            An AI-powered emergency response and government assistance platform helping citizens instantly access emergency services, government procedures, safety guidance, and real-time support.
-          </p>
-
-          {/* Primary Landing Action Buttons */}
-          <div className="pt-4 flex flex-wrap justify-center gap-3 max-w-lg sm:max-w-none mx-auto">
-            <button
-              onClick={() => setSosModalOpen(true)}
-              className="bg-red-600 hover:bg-red-700 text-white px-6 py-3.5 rounded-lg text-sm font-extrabold uppercase tracking-wider flex items-center space-x-2 shadow-lg shadow-red-950 border border-red-500 hover:scale-[1.02] transition-transform"
+    <>
+      {/* ════════ EMERGENCY ALERT BANNER ════════ */}
+      <div className="alert-banner" role="alert" aria-live="polite">
+        <div className="gov-container">
+          <div className="flex items-center gap-3">
+            <span className="alert-badge flex-shrink-0">⚠ {t('alert.title')}</span>
+            <div
+              className="ticker-wrap flex-1 overflow-hidden cursor-pointer"
+              onMouseEnter={() => setTickerPaused(true)}
+              onMouseLeave={() => setTickerPaused(false)}
             >
-              <ShieldAlert className="h-4.5 w-4.5" />
-              <span>Emergency SOS</span>
-            </button>
-
-            <button
-              onClick={handleTriggerWomensSOS}
-              className={`px-6 py-3.5 rounded-lg text-sm font-extrabold uppercase tracking-wider flex items-center space-x-2 shadow-lg border hover:scale-[1.02] transition-all ${
-                womensSOSActive
-                  ? 'bg-amber-600 hover:bg-amber-700 text-white border-amber-500 animate-pulse'
-                  : 'bg-red-950/80 hover:bg-red-900 text-red-300 border-red-800'
-              }`}
-            >
-              <Siren className="h-4.5 w-4.5" />
-              <span>{womensSOSActive ? 'Stop Women\'s SOS' : 'Women\'s Safety SOS'}</span>
-            </button>
-
-            <button
-              onClick={() => {
-                // Focus search or trigger chatbot
-                const chatBtn = document.querySelector('[title="Open Emergency AI Assistant"]') as HTMLButtonElement;
-                if (chatBtn) chatBtn.click();
-              }}
-              className="bg-slate-800 hover:bg-slate-700 text-white px-6 py-3.5 rounded-lg text-sm font-extrabold uppercase tracking-wider flex items-center space-x-2 border border-slate-700 hover:scale-[1.02] transition-transform"
-            >
-              <Activity className="h-4.5 w-4.5 text-emerald-400" />
-              <span>AI Assistant</span>
-            </button>
-
-            <button
-              onClick={handleScrollToMap}
-              className="bg-slate-850 hover:bg-slate-800 text-slate-300 px-6 py-3.5 rounded-lg text-sm font-extrabold uppercase tracking-wider flex items-center space-x-2 border border-slate-800 hover:scale-[1.02] transition-transform"
-            >
-              <Compass className="h-4.5 w-4.5" />
-              <span>Find Help Near Me</span>
-            </button>
-          </div>
-        </div>
-      </section>
-
-      {/* ACTIVE WOMEN'S SOS TRACKING DASHBOARD PANEL */}
-      {womensSOSActive && (
-        <section className="bg-red-950/40 border-b border-red-900 p-6">
-          <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
-            
-            {/* Siren Alert Indicator */}
-            <div className="bg-slate-900 border border-red-800 rounded-xl p-4 flex flex-col justify-between shadow-2xl relative overflow-hidden">
-              <div className="absolute top-0 right-0 h-24 w-24 bg-red-650/10 rounded-full animate-ping pointer-events-none" />
-              <div className="flex items-start space-x-3">
-                <Siren className="h-10 w-10 text-red-500 animate-spin-slow shrink-0" />
-                <div>
-                  <h3 className="font-black text-base text-white tracking-wide uppercase">WOMEN'S SOS ACTIVE</h3>
-                  <p className="text-[10px] text-red-400 font-bold uppercase tracking-tight">Audio Siren Beeping</p>
-                  <p className="text-xs text-slate-300 mt-2">
-                    A high-pitched looping emergency siren is broadcasting from this device to deter threats and draw immediate public attention.
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={stopSiren}
-                className="mt-4 bg-slate-800 hover:bg-slate-750 border border-slate-700 text-red-400 text-xs font-bold uppercase py-2 rounded flex items-center justify-center space-x-1.5"
-              >
-                <span>Mute Local Siren</span>
-              </button>
-            </div>
-
-            {/* Tracking logs */}
-            <div className="bg-slate-950 border border-red-900/60 rounded-xl p-4 flex flex-col justify-between shadow-2xl font-mono text-xs">
-              <div className="border-b border-red-950 pb-2 mb-2 flex items-center justify-between">
-                <span className="text-red-400 font-bold uppercase tracking-wider">🚨 Safety Dispatch Logs</span>
-                {locating && <span className="text-[9px] bg-amber-950 text-amber-400 px-1.5 py-0.2 rounded">Locating...</span>}
-              </div>
-              <div className="flex-1 space-y-1.5 max-h-[140px] overflow-y-auto mb-2 text-slate-300">
-                {womensSOSLog.map((log, i) => (
-                  <p key={i} className="leading-tight text-[10px]">&gt; {log}</p>
+              <div className={`ticker-content text-gray-700 font-medium ${tickerPaused ? '[animation-play-state:paused]' : ''}`}>
+                {ALERTS.map(a => (
+                  <span key={a.id} className="mr-16">
+                    {a.type === 'warning' ? '🔴' : '🔵'} {a.text}
+                  </span>
                 ))}
               </div>
-              <div className="bg-slate-900 p-2.5 rounded border border-slate-850">
-                <span className="text-[9px] text-slate-400 font-extrabold block mb-0.5">CURRENT COORDINATES</span>
-                <p className="text-xs font-bold text-white truncate">
-                  {womensLocation ? womensLocation.address : 'Verifying GPS satellite feed...'}
+            </div>
+            <Link href="#" className="text-xs text-blue-700 font-semibold hover:underline flex-shrink-0">
+              {t('alert.view')}
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      {/* ════════ HERO SECTION ════════ */}
+      <section className="gov-hero" aria-labelledby="hero-heading">
+        <div className="gov-container relative z-10">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
+            {/* Left: Content */}
+            <div>
+              <div className="gov-hero-badge">
+                <CheckCircle className="h-3.5 w-3.5 text-green-300" />
+                {t('hero.certified')}
+              </div>
+
+              <h2 id="hero-heading" className="gov-hero h1">
+                {t('hero.title')}
+              </h2>
+
+              <p className="gov-hero-tagline">"{t('hero.tagline')}"</p>
+              <p className="gov-hero-desc">{t('hero.desc')}</p>
+
+              {/* CTA Buttons */}
+              <div className="flex flex-wrap gap-3">
+                <Link href="#emergency-sos" className="gov-btn-sos">
+                  🚨 {t('hero.sos')}
+                </Link>
+                <Link href="#women-safety" className="gov-btn-women-sos">
+                  ♀ {t('hero.womenSOS')}
+                </Link>
+                <Link href="#ai-helpdesk" className="gov-btn-secondary">
+                  🤖 {t('hero.aiAssist')}
+                </Link>
+                <Link href="#nearby-services" className="gov-btn-secondary">
+                  📍 {t('hero.nearbyHelp')}
+                </Link>
+              </div>
+            </div>
+
+            {/* Right: Helpline panel */}
+            <div className="hidden lg:block">
+              <div className="bg-white/10 border border-white/20 rounded p-6 backdrop-blur-sm">
+                <h3 className="text-white font-bold text-sm uppercase tracking-wider mb-4 flex items-center gap-2">
+                  <Phone className="h-4 w-4 text-red-300" />
+                  {t('helplines.title')}
+                </h3>
+                <div className="grid grid-cols-2 gap-2">
+                  {HELPLINES.slice(0, 6).map(h => (
+                    <a key={h.number} href={`tel:${h.number}`}
+                      className="flex items-center gap-2 bg-white/10 hover:bg-white/20 p-2.5 rounded transition-colors group">
+                      <span className="text-red-300 font-black text-base font-mono">{h.number}</span>
+                      <span className="text-white/75 text-xs group-hover:text-white">{h.label}</span>
+                    </a>
+                  ))}
+                </div>
+                <p className="text-white/50 text-xs mt-3 text-center">
+                  Available 24×7 — Free of charge from any network
                 </p>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
 
-            {/* Nearest Police & Contacts Helplines */}
-            <div className="bg-slate-900 border border-red-800 rounded-xl p-4 flex flex-col justify-between shadow-2xl">
-              <div>
-                <span className="text-[9px] bg-red-900 text-white font-extrabold uppercase px-2 py-0.5 rounded tracking-wide">
-                  Closest Police Responders
-                </span>
-                <h4 className="font-extrabold text-sm text-white mt-2 flex items-center space-x-1">
-                  <MapPin className="h-4 w-4 text-red-400 shrink-0" />
-                  <span>Central District Women Police Cell</span>
-                </h4>
-                <p className="text-[10px] text-slate-400 mb-3">Distance: ~1.2 km | Estimated Arrival: 3-5 mins</p>
+      {/* ════════ QUICK ACCESS SERVICES ════════ */}
+      <section className="gov-section-white" aria-labelledby="services-heading">
+        <div className="gov-container">
+          <div className="mb-6">
+            <h2 id="services-heading" className="gov-section-title">{t('services.title')}</h2>
+            <p className="gov-section-subtitle">{t('services.subtitle')}</p>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            {services.map(svc => {
+              const svcT = t(`services.${svc.key}.title`);
+              const svcD = t(`services.${svc.key}.desc`);
+              return (
+                <Link key={svc.key} href={svc.href}
+                  className="gov-service-card group text-center items-center"
+                  aria-label={svcT}
+                >
+                  <div className={`gov-service-card-icon ${svc.bg} ${svc.color} mx-auto group-hover:scale-110 transition-transform`}>
+                    {svc.icon}
+                  </div>
+                  <h3 className="text-xs font-bold text-center leading-tight mb-1">{svcT}</h3>
+                  <p className="text-[11px] text-gray-500 text-center leading-tight hidden sm:block flex-1">{svcD}</p>
+                  <span className="text-xs text-blue-700 font-semibold mt-2 hover:underline">{t('services.medical.btn')}</span>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* ════════ EMERGENCY SOS PANEL ════════ */}
+      <section id="emergency-sos" className="gov-section-gray" aria-labelledby="sos-heading">
+        <div className="gov-container">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Left: SOS info */}
+            <div className="lg:col-span-1">
+              <h2 id="sos-heading" className="gov-section-title">{t('sos.title')}</h2>
+              <p className="gov-section-subtitle">{t('sos.subtitle')}</p>
+
+              <div className="gov-notice-danger gov-notice mb-4">
+                <p className="text-sm font-semibold text-red-700">
+                  🚨 {t('sos.note')}
+                </p>
               </div>
 
-              <div className="grid grid-cols-2 gap-2 mt-2">
-                <a
-                  href="tel:1091"
-                  className="bg-red-650 hover:bg-red-700 text-white py-2 rounded text-xs font-extrabold uppercase tracking-wide flex items-center justify-center space-x-1 shadow"
-                >
-                  <Phone className="h-3.5 w-3.5" />
-                  <span>Call 1091</span>
+              {/* Helplines */}
+              <div className="space-y-2">
+                {HELPLINES.map(h => (
+                  <a key={h.number} href={`tel:${h.number}`}
+                    className={`helpline-card flex items-center justify-between hover:bg-blue-50 transition-colors ${h.color}`}>
+                    <span className="helpline-label">{h.label}</span>
+                    <span className="helpline-number">{h.number}</span>
+                  </a>
+                ))}
+              </div>
+            </div>
+
+            {/* Right: SOS Category grid */}
+            <div className="lg:col-span-2">
+              <div className="gov-card">
+                <div className="flex items-center gap-2 mb-4 pb-3 border-b border-gray-100">
+                  <AlertTriangle className="h-5 w-5 text-red-600" />
+                  <h3 className="font-bold text-gray-800">{t('sos.select')}</h3>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
+                  {[
+                    { key: 'medical', icon: '🏥', color: 'border-red-200 hover:border-red-400 hover:bg-red-50' },
+                    { key: 'police', icon: '🚔', color: 'border-blue-200 hover:border-blue-400 hover:bg-blue-50' },
+                    { key: 'fire', icon: '🔥', color: 'border-orange-200 hover:border-orange-400 hover:bg-orange-50' },
+                    { key: 'women', icon: '♀', color: 'border-pink-200 hover:border-pink-400 hover:bg-pink-50' },
+                    { key: 'disaster', icon: '🌊', color: 'border-amber-200 hover:border-amber-400 hover:bg-amber-50' },
+                    { key: 'missing', icon: '🔍', color: 'border-teal-200 hover:border-teal-400 hover:bg-teal-50' },
+                    { key: 'child', icon: '👶', color: 'border-yellow-200 hover:border-yellow-400 hover:bg-yellow-50' },
+                    { key: 'cyber', icon: '💻', color: 'border-indigo-200 hover:border-indigo-400 hover:bg-indigo-50' },
+                    { key: 'other', icon: '📞', color: 'border-gray-200 hover:border-gray-400 hover:bg-gray-50' },
+                  ].map(cat => (
+                    <Link key={cat.key} href={`/guidance`}
+                      className={`p-4 rounded border-2 text-center transition-all cursor-pointer ${cat.color} block`}
+                    >
+                      <div className="text-2xl mb-1">{cat.icon}</div>
+                      <div className="text-xs font-bold text-gray-700 leading-tight">
+                        {t(`sos.categories.${cat.key}`)}
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+
+                <div className="gov-notice gov-notice-info flex items-start gap-2">
+                  <Info className="h-4 w-4 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-blue-800">
+                    For immediate life-threatening emergency, directly call <strong>112</strong>. This platform logs incidents and alerts your registered emergency contacts.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ════════ AI GOVERNMENT HELPDESK ════════ */}
+      <section id="ai-helpdesk" className="gov-section-white" aria-labelledby="ai-heading">
+        <div className="gov-container">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+            {/* Left: Description */}
+            <div>
+              <h2 id="ai-heading" className="gov-section-title">{t('ai.title')}</h2>
+              <p className="gov-section-subtitle">{t('ai.subtitle')}</p>
+              <p className="text-sm text-gray-600 mb-5 leading-relaxed">{t('ai.desc')}</p>
+
+              {/* Features */}
+              <div className="space-y-3 mb-6">
+                {[
+                  { icon: '🗣️', label: 'Voice Input — English, हिन्दी, ಕನ್ನಡ' },
+                  { icon: '🔊', label: 'Text-to-Speech response in your language' },
+                  { icon: '🚨', label: 'Distress detection with auto-helpline routing' },
+                  { icon: '📋', label: 'Step-by-step government procedure guidance' },
+                  { icon: '🕐', label: 'Available 24×7, even during network disruptions' },
+                ].map((f, i) => (
+                  <div key={i} className="flex items-center gap-3">
+                    <span className="text-lg">{f.icon}</span>
+                    <span className="text-sm text-gray-700">{f.label}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Suggested questions */}
+              <div>
+                <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Suggested Questions</p>
+                <div className="flex flex-wrap gap-2">
+                  {(t('ai.suggestions') as unknown as string[]).map((q: string, i: number) => (
+                    <button key={i}
+                      onClick={() => sendAiMessage(q)}
+                      className="text-xs bg-blue-50 text-blue-700 border border-blue-200 px-3 py-1.5 rounded hover:bg-blue-100 transition-colors font-medium"
+                    >
+                      {q}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Right: Chat interface */}
+            <div className="gov-helpdesk">
+              <div className="gov-helpdesk-header">
+                <div className="w-8 h-8 bg-white/20 rounded flex items-center justify-center text-base">🤖</div>
+                <div>
+                  <div className="font-bold text-sm">{t('ai.title')}</div>
+                  <div className="text-xs text-white/60">Government of India • Online</div>
+                </div>
+                <div className="ml-auto flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
+                  <span className="text-xs text-white/60">Live</span>
+                </div>
+              </div>
+
+              <div className="gov-helpdesk-messages" role="log" aria-live="polite" aria-label="Chat messages">
+                {aiMessages.map((msg, i) => (
+                  <div key={i} className={msg.role === 'bot' ? 'gov-msg-bot' : 'gov-msg-user'}>
+                    {msg.role === 'bot' && <span className="text-[10px] text-blue-500 font-bold block mb-1">GOV AI NAVIGATOR</span>}
+                    <p className="text-sm whitespace-pre-line">{msg.text}</p>
+                  </div>
+                ))}
+                {aiLoading && (
+                  <div className="gov-msg-bot">
+                    <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+                  </div>
+                )}
+                <div ref={chatEndRef} />
+              </div>
+
+              <div className="p-3 border-t border-gray-200 bg-white">
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={aiMessage}
+                    onChange={e => setAiMessage(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && sendAiMessage(aiMessage)}
+                    placeholder={t('ai.placeholder')}
+                    className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200"
+                    aria-label="Type your question"
+                  />
+                  <button
+                    onClick={toggleVoice}
+                    className={`p-2 rounded border transition-colors ${isListening ? 'bg-red-600 border-red-600 text-white' : 'border-gray-300 text-gray-500 hover:bg-gray-50'}`}
+                    aria-label={t('ai.voice')}
+                    title={t('ai.voice')}
+                  >
+                    {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+                  </button>
+                  <button
+                    onClick={() => sendAiMessage(aiMessage)}
+                    disabled={!aiMessage.trim() || aiLoading}
+                    className="gov-btn-primary gov-btn-sm disabled:opacity-50"
+                    aria-label={t('ai.send')}
+                  >
+                    <Send className="h-4 w-4" />
+                    <span className="hidden sm:inline">{t('ai.send')}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ════════ GOVERNMENT GUIDANCE ════════ */}
+      <section className="gov-section-gray" aria-labelledby="guidance-heading">
+        <div className="gov-container">
+          <div className="mb-6">
+            <h2 id="guidance-heading" className="gov-section-title">{t('guidance.title')}</h2>
+            <p className="gov-section-subtitle">{t('guidance.subtitle')}</p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {GUIDANCE_STEPS.map(g => (
+              <Link key={g.title} href={g.href} className="guidance-card group">
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">{g.icon}</span>
+                  <div>
+                    <div className="font-semibold text-sm group-hover:text-blue-700">{g.title}</div>
+                    <div className="text-xs text-gray-500">{g.steps} steps • Est. time: {g.time}</div>
+                  </div>
+                </div>
+                <ChevronRight className="h-4 w-4 text-gray-400 group-hover:text-blue-600 flex-shrink-0" />
+              </Link>
+            ))}
+          </div>
+
+          <div className="mt-4 text-center">
+            <Link href="/guidance" className="gov-btn-outline">
+              <BookOpen className="h-4 w-4" />
+              View All Government Procedures
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ════════ WOMEN SAFETY SECTION ════════ */}
+      <section id="women-safety" className="women-safety-section" aria-labelledby="women-heading">
+        <div className="gov-container">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+            <div>
+              <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 px-3 py-1 rounded text-xs font-bold uppercase tracking-wider mb-4">
+                ♀ {t('common.official')}
+              </div>
+              <h2 id="women-heading" className="text-2xl font-bold text-white mb-3">
+                {t('women.title')}
+              </h2>
+              <p className="text-base text-white/80 mb-2 font-medium italic">{t('women.subtitle')}</p>
+              <p className="text-sm text-white/65 leading-relaxed mb-6">{t('women.desc')}</p>
+
+              <div className="flex flex-wrap gap-3">
+                <a href="tel:181" className="gov-btn-primary bg-white text-[#8B0045] border-white hover:bg-white/90">
+                  <Phone className="h-4 w-4" />
+                  {t('women.helpline')}
                 </a>
-                <a
-                  href="tel:112"
-                  className="bg-slate-800 hover:bg-slate-750 text-slate-350 py-2 rounded text-xs font-extrabold uppercase tracking-wide flex items-center justify-center space-x-1 border border-slate-750"
-                >
-                  <Phone className="h-3.5 w-3.5" />
-                  <span>Call 112</span>
+                <a href="tel:112" className="gov-btn-secondary">
+                  <Phone className="h-4 w-4" />
+                  {t('women.police')}
                 </a>
               </div>
             </div>
 
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { icon: '📍', label: t('women.location'), desc: 'Share live GPS location with trusted contacts' },
+                { icon: '🔔', label: t('women.siren'), desc: 'Activate loud audio siren to deter attackers' },
+                { icon: '📞', label: t('women.helpline'), desc: 'Direct connect to Women Helpline 181' },
+                { icon: '🚔', label: t('women.nearest'), desc: 'Find nearest police station with navigation' },
+              ].map((item, i) => (
+                <div key={i} className="bg-white/10 border border-white/15 p-4 rounded hover:bg-white/15 transition-colors">
+                  <div className="text-2xl mb-2">{item.icon}</div>
+                  <div className="text-white font-bold text-sm mb-1">{item.label}</div>
+                  <div className="text-white/60 text-xs leading-relaxed">{item.desc}</div>
+                </div>
+              ))}
+            </div>
           </div>
-        </section>
-      )}
+        </div>
+      </section>
 
-      {/* QUICK LAUNCH GRID TOOLS */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <h3 className="font-extrabold text-xs text-slate-400 uppercase tracking-widest text-center mb-8">
-          Civil Protection & Safety Modules
-        </h3>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          {[
-            { title: 'Disaster Mode', href: '/disaster', desc: 'Evacuations & camps', icon: Flame, color: 'text-orange-500 hover:border-orange-500/40' },
-            { title: 'AI Scam Detector', href: '/scam-detector', desc: 'Scan fraud SMS', icon: ShieldAlert, color: 'text-indigo-400 hover:border-indigo-400/40' },
-            { title: 'Deepfake Check', href: '/deepfake', desc: 'Verify image/audio', icon: AlertOctagon, color: 'text-rose-500 hover:border-rose-500/40' },
-            { title: 'AI First Aid', href: '/first-aid', desc: 'CPR voice guides', icon: Activity, color: 'text-emerald-500 hover:border-emerald-500/40' },
-            { title: 'Missing Person', href: '/missing-person', desc: 'Poster builder', icon: Users, color: 'text-teal-400 hover:border-teal-400/40' },
-            { title: 'Gov Procedures', href: '/guidance', desc: 'Lost documentation', icon: FileText, color: 'text-blue-400 hover:border-blue-400/40' }
-          ].map((mod) => {
-            const Icon = mod.icon;
-            return (
-              <Link
-                key={mod.title}
-                href={mod.href}
-                className={`bg-slate-900 border border-slate-850 p-4 rounded-xl flex flex-col justify-between group hover:bg-slate-850 transition-all hover:scale-[1.03] ${mod.color}`}
-              >
-                <div className="p-2 rounded bg-slate-950/60 w-fit mb-3">
-                  <Icon className="h-5 w-5" />
+      {/* ════════ NEARBY SERVICES MAP ════════ */}
+      <section id="nearby-services" className="gov-section-white" aria-labelledby="nearby-heading">
+        <div className="gov-container">
+          <div className="mb-6">
+            <h2 id="nearby-heading" className="gov-section-title">{t('nav.nearby')}</h2>
+            <p className="gov-section-subtitle">Find government facilities near your location</p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Map placeholder */}
+            <div className="lg:col-span-2">
+              <div className="border border-gray-200 rounded bg-gray-100 h-72 flex flex-col items-center justify-center gap-3">
+                <MapPin className="h-10 w-10 text-gray-400" />
+                <p className="text-sm font-medium text-gray-500">Enable location to find nearby services</p>
+                <button
+                  onClick={() => navigator.geolocation?.getCurrentPosition(() => {})}
+                  className="gov-btn-primary gov-btn-sm"
+                >
+                  <Navigation className="h-4 w-4" />
+                  Enable Location Access
+                </button>
+              </div>
+            </div>
+
+            {/* Nearby categories */}
+            <div className="space-y-2">
+              {[
+                { icon: '🏥', label: 'Hospitals & Clinics', count: 'Finding...' },
+                { icon: '🚔', label: 'Police Stations', count: 'Finding...' },
+                { icon: '🚒', label: 'Fire Stations', count: 'Finding...' },
+                { icon: '🏛️', label: 'Government Offices', count: 'Finding...' },
+                { icon: '⛺', label: 'Relief Shelters', count: 'Finding...' },
+                { icon: '💊', label: 'Pharmacies', count: 'Finding...' },
+              ].map((item, i) => (
+                <div key={i} className="flex items-center justify-between p-3 border border-gray-200 rounded hover:border-blue-300 hover:bg-blue-50 transition-colors cursor-pointer">
+                  <div className="flex items-center gap-3">
+                    <span className="text-xl">{item.icon}</span>
+                    <span className="text-sm font-medium text-gray-700">{item.label}</span>
+                  </div>
+                  <span className="text-xs text-gray-400 font-medium">{item.count}</span>
                 </div>
-                <div>
-                  <h4 className="font-extrabold text-xs text-white uppercase group-hover:text-emerald-400 transition-colors">
-                    {mod.title}
-                  </h4>
-                  <p className="text-[10px] text-slate-400 mt-1 leading-tight">{mod.desc}</p>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ════════ MISSING PERSON ════════ */}
+      <section className="gov-section-blue" aria-labelledby="missing-heading">
+        <div className="gov-container">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+            <div>
+              <h2 id="missing-heading" className="gov-section-title">{t('missing.title')}</h2>
+              <p className="gov-section-subtitle">{t('missing.subtitle')}</p>
+              <div className="flex flex-wrap gap-3 mt-4">
+                <Link href="/missing-person" className="gov-btn-primary">
+                  <Search className="h-4 w-4" />
+                  {t('missing.report')}
+                </Link>
+                <Link href="/missing-person" className="gov-btn-outline">
+                  {t('missing.poster')}
+                </Link>
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                { icon: '📸', label: 'Upload Photo', desc: 'Clear recent photo' },
+                { icon: '📝', label: 'Enter Details', desc: 'Age, description, location' },
+                { icon: '📢', label: 'Auto Report', desc: 'Submit to authorities instantly' },
+              ].map((step, i) => (
+                <div key={i} className="gov-card text-center">
+                  <div className="text-3xl mb-2">{step.icon}</div>
+                  <div className="text-sm font-bold text-gray-800 mb-1">Step {i + 1}</div>
+                  <div className="text-xs font-semibold text-blue-700 mb-1">{step.label}</div>
+                  <div className="text-xs text-gray-500">{step.desc}</div>
                 </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ════════ FIRST AID SECTION ════════ */}
+      <section className="gov-section-white" aria-labelledby="firstaid-heading">
+        <div className="gov-container">
+          <div className="mb-6">
+            <h2 id="firstaid-heading" className="gov-section-title">{t('nav.firstAid')}</h2>
+            <p className="gov-section-subtitle">Government-approved voice-guided emergency first aid instructions</p>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-4">
+            {[
+              { icon: '❤️', label: 'CPR' },
+              { icon: '🔥', label: 'Burns' },
+              { icon: '🐍', label: 'Snake Bite' },
+              { icon: '😮', label: 'Choking' },
+              { icon: '🩸', label: 'Bleeding' },
+              { icon: '🦴', label: 'Fracture' },
+            ].map((item, i) => (
+              <Link key={i} href="/first-aid"
+                className="gov-card text-center hover:border-blue-300 cursor-pointer group">
+                <div className="text-3xl mb-2">{item.icon}</div>
+                <div className="text-sm font-bold text-gray-700 group-hover:text-blue-700">{item.label}</div>
+                <div className="text-xs text-blue-600 mt-1 font-medium">Voice Guide →</div>
               </Link>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* MAP VIEW SECTION */}
-      <section id="map-section" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
-        <div className="mb-6 flex flex-col md:flex-row md:items-end justify-between gap-2">
-          <div>
-            <h3 className="font-extrabold text-lg uppercase tracking-wider text-white">Emergency Services Locator</h3>
-            <p className="text-xs text-slate-400">Locates neighboring hospitals, fire control, police units, and relief cells.</p>
+            ))}
           </div>
-          <span className="text-[10px] text-slate-500 font-mono">MAP CENTROID LOCK: NEW DELHI/BENGALURU</span>
-        </div>
-        <InteractiveMap />
-      </section>
-
-      {/* EMERGENCY INFRASTRUCTURE STATISTICS */}
-      <section className="bg-slate-900 border-t border-b border-slate-850 py-12 text-center">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-2 md:grid-cols-4 gap-6">
-          <div>
-            <span className="font-black text-2xl sm:text-3xl text-emerald-400 block">&lt; 3.2 mins</span>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Avg Dispatch Response</span>
-          </div>
-          <div>
-            <span className="font-black text-2xl sm:text-3xl text-emerald-400 block">100%</span>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Active Server Uptime</span>
-          </div>
-          <div>
-            <span className="font-black text-2xl sm:text-3xl text-emerald-400 block">5 Language</span>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Multilingual AI Channels</span>
-          </div>
-          <div>
-            <span className="font-black text-2xl sm:text-3xl text-emerald-400 block">1930 / 112</span>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Direct Trunk Line Integrations</span>
+          <div className="text-center">
+            <Link href="/first-aid" className="gov-btn-primary">
+              <Volume2 className="h-4 w-4" />
+              Open Full First Aid Guide
+            </Link>
           </div>
         </div>
       </section>
 
-      {/* FOOTER */}
-      <footer className="bg-slate-950 border-t border-slate-900 py-8 text-center text-xs text-slate-500 font-semibold">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-2">
-          <p className="uppercase tracking-widest">Official Emergency Services Portal of India</p>
-          <p className="text-[10px] text-slate-600">Designed for 100% availability on low bandwidths. Powered by Web Speech, Leaflet, and Gemini AI.</p>
+      {/* ════════ DISASTER ASSISTANCE ════════ */}
+      <section className="gov-section-gray" aria-labelledby="disaster-heading">
+        <div className="gov-container">
+          <div className="mb-6">
+            <h2 id="disaster-heading" className="gov-section-title">{t('nav.disaster')}</h2>
+            <p className="gov-section-subtitle">Government disaster response procedures, safe routes & relief camp locations</p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mb-4">
+            {[
+              { icon: '🌊', label: 'Floods', status: 'Advisory Active', color: 'border-blue-300 bg-blue-50' },
+              { icon: '🏔️', label: 'Earthquakes', status: 'Safe Zone', color: 'border-gray-300 bg-gray-50' },
+              { icon: '🌀', label: 'Cyclones', status: 'Watch Mode', color: 'border-yellow-300 bg-yellow-50' },
+              { icon: '🔥', label: 'Wildfires', status: 'Safe Zone', color: 'border-gray-300 bg-gray-50' },
+              { icon: '⛰️', label: 'Landslides', status: 'Alert Active', color: 'border-orange-300 bg-orange-50' },
+            ].map((d, i) => (
+              <Link key={i} href="/disaster"
+                className={`gov-card border-2 text-center cursor-pointer hover:shadow-md ${d.color}`}>
+                <div className="text-3xl mb-2">{d.icon}</div>
+                <div className="text-sm font-bold text-gray-800 mb-1">{d.label}</div>
+                <span className={`gov-badge text-xs ${d.status === 'Safe Zone' ? 'gov-badge-green' : d.status.includes('Active') ? 'gov-badge-red' : 'gov-badge-orange'}`}>
+                  {d.status}
+                </span>
+              </Link>
+            ))}
+          </div>
+          <div className="text-center">
+            <Link href="/disaster" className="gov-btn-outline">
+              <AlertTriangle className="h-4 w-4" />
+              Open Disaster Assistance Portal
+            </Link>
+          </div>
         </div>
-      </footer>
+      </section>
 
-      {/* SOS MODAL & FLOATING ASSISTANT */}
-      <SOSModal isOpen={sosModalOpen} onClose={() => setSosModalOpen(false)} />
-      <FloatingBot />
-    </main>
+      {/* ════════ FULL HELPLINES SECTION ════════ */}
+      <section id="contact" className="gov-section-navy" aria-labelledby="helplines-heading">
+        <div className="gov-container">
+          <div className="mb-6 text-center">
+            <h2 id="helplines-heading" className="text-xl font-bold text-white mb-2">
+              {t('helplines.title')}
+            </h2>
+            <p className="text-white/60 text-sm">Free calls available 24×7 from any mobile or landline</p>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {HELPLINES.map(h => (
+              <a key={h.number} href={`tel:${h.number}`}
+                className="bg-white/10 border border-white/15 hover:bg-white/20 p-4 rounded text-center transition-colors group">
+                <div className="text-3xl font-black text-red-300 group-hover:text-white font-mono mb-1">
+                  {h.number}
+                </div>
+                <div className="text-xs text-white/70 group-hover:text-white/90 font-medium">{h.label}</div>
+              </a>
+            ))}
+          </div>
+
+          <p className="text-center text-white/40 text-xs mt-6">
+            Always call 112 first in a life-threatening emergency. This platform provides AI assistance in addition to emergency services.
+          </p>
+        </div>
+      </section>
+    </>
   );
 }
